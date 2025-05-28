@@ -8,10 +8,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 //40k AI files
-import * as boardUtil from "./gameEngine/board.mjs";
-import * as unitUtil from "./gameEngine/units.mjs"
-import * as diceUtil from "./gameEngine/dice.mjs"
-import * as playerUtil from "./gameEngine/player.mjs"
+import * as boardUtil from "./gameEngine/board.ts";
+import * as unitUtil from "./gameEngine/units.ts"
+import * as diceUtil from "./gameEngine/dice.ts"
+import * as playerUtil from "./gameEngine/player.ts"
 //create express app
 const app = express();
 const server = http.createServer(app)
@@ -42,15 +42,15 @@ for(var index in results){
 */
 var testBoard= new boardUtil.Board(22,30)
 
-var boltRifle = new unitUtil.Weapon(3,3,3,4,null,null)
+var boltRifle: unitUtil.Weapon = new unitUtil.Weapon(3,3,3,4,[],24,1)
 
-var intercessorModel = new unitUtil.Unit(6,3,1,3,3,14,boltRifle,null)
+var intercessorModel = new unitUtil.Unit(6,4,3,2,boltRifle,boltRifle)
 
-var testUnit = new unitUtil.UnitWrapper(testBoard.getTile(2,2),"Test Unit",testBoard,[intercessorModel.clone()])
+
+var testUnit = new unitUtil.UnitWrapper(testBoard.getTile(2,2),"Test Unit",[intercessorModel.clone()])
 //testUnit.move(testBoard.getTile(3,3))
 
-var testUnit2 = new unitUtil.UnitWrapper(testBoard.getTile(2,2),"Test Unit2",testBoard,[intercessorModel.clone()])
-
+var testUnit2 = new unitUtil.UnitWrapper(testBoard.getTile(2,2),"Test Unit2",[intercessorModel.clone()])
 var testPlayer = new playerUtil.Warhammer_AI_Player(1,testBoard)
 testPlayer.addUnit(testUnit)
 testPlayer.addUnit(testUnit2)
