@@ -1,15 +1,15 @@
-import {Board, BoardObject} from "./board.mjs"
-import * as diceUtil from "./dice.mjs"
+import {Tile,Board, BoardObject} from "./board.ts"
+import * as diceUtil from "./dice.ts"
 
 class Weapon{
-    attacks = 0;
-    ws = 7;
-    damage = 0;
-    strength = 0;
-    keywords = [];
-    range = 0;
-    ap = 0;
-    constructor(attacks,ws,damage,strength,keywords,range,ap){
+    attacks:number = 0;
+    ws:number = 7;
+    damage:number = 0;
+    strength:number = 0;
+    keywords:string[] = [];
+    range:number = 0;
+    ap:number = 0;
+    constructor(attacks:number,ws:number,damage:number,strength:number,keywords:string[],range:number,ap:number){
         this.attacks = attacks;
         this.ws = ws;
         this.damage = damage;
@@ -18,20 +18,20 @@ class Weapon{
         this.range = range;
         this.ap = ap;
     }
-    //returns an array of length two. output[0] represents the number of succesful attack dice, and output[1] represents the number of critical successes
-
-    attack(toughness){
-        var results = diceUtil.multiD6(this.attacks);
-        var hits = 0;
-        for(var result of results){
-            if(result >= ws){
+    
+    //TODO: implement keywords here. Use simulation work already done elsewhere, maybe move to unit or unit wrapper?
+    attack(toughness:number):number{
+        let results:number[] = diceUtil.multiD6(this.attacks);
+        var hits:number = 0;
+        for(let result of results){
+            if(result >= this.ws){
                 hits++;
             }
         }
-        var woundResults = diceUtil.multiD6(hits);
-        var output = 0;
+        let woundResults:number[] = diceUtil.multiD6(hits);
+        let output:number = 0;
         //determine what it takes to wound
-        var toWound = 5;
+        let toWound:number = 5;
         switch(true){
             case this.strength * 2 <= toughness:
                 toWound = 6;
@@ -42,12 +42,15 @@ class Weapon{
             case this.strength == toughness:
                 toWound = 4;
                 break;
+            case toughness < this.strength:
+                toWound = 3;
+                break;
             case toughness <= this.strength * 2:
                 toWound = 2;
                 break;
         }
 
-        for(var result of results){
+        for(let result of woundResults){
             if(result >= toWound){
                 output++;
             }
@@ -58,18 +61,24 @@ class Weapon{
 }
 
 class UnitWrapper extends BoardObject{
-    units = []
-    character = null;
-    constructor(tile,name,units){
+    units: Unit[] = []
+    movement:number;
+    largestRange:number;
+    character: Unit;
+    constructor(tile:Tile,name:string,units:Unit[]){
         super(tile,name);
         this.units = units;
+        //set the movement of the blob to the slowest movement in the unit
+        this.movement = Math.min(...this.units.map((value:Unit) => value.movement))
+        //retrive the largest range in the unit
+        this.largestRange = Math.min(...this.units.map((value:Unit) => value.rangedWeapon.range))
     }
 
     //make saving throws based on the incoming attacks
-    savingThrows(wounds,ap){
-        var results = diceUtil.multiD6(wounds);
-        var successes = 0;
-        for(var result of results){
+    savingThrows(wounds:number,ap:number):number{
+        let results = diceUtil.multiD6(wounds);
+        let successes = 0;
+        for(let result of results){
             if(result - ap >= this.units[0].save){
                 successes++;
             }
@@ -80,7 +89,7 @@ class UnitWrapper extends BoardObject{
     }
 
     //TODO: rewrite for multiple models in a unit
-    takeDamage(damageToTake){
+    takeDamage(damageToTake:number):void{
         this.units[0].wounds -= damageToTake;
         if(this.units[0].wounds <= 0){
             if(this.units.length == 1){
@@ -94,18 +103,18 @@ class UnitWrapper extends BoardObject{
 
     }
 
-    attackUnitRanged(unitToAttack){
+    attackUnitRanged(unitToAttack:UnitWrapper,board:Board):void{
         //check if line of sight is ok
-        var lineOfSight = this.board.lineOfSight(this.currentTile,unitToAttack.currentTile);
+        var lineOfSight = board.lineOfSight(this.currentTile,unitToAttack.currentTile);
         if(!lineOfSight){
             return;
         }
         //TODO: redo this sequence for multiple attacking models and weapons of different stats
         //for now iterate over each unit and attack with each of its weapons. redo later into batches when human dice rolling is involved
         for(var unit of this.units){
-            var wounds = unit.rangedWeapon.attack();
+            var wounds = unit.rangedWeapon.attack(unitToAttack.units[0].toughness);
 
-            var succesfulWounds = unitToAttack.savingThrows(wounds);
+            var succesfulWounds = unitToAttack.savingThrows(wounds,unit.rangedWeapon.ap);
     
             for(var i = 0; i < succesfulWounds; i++){
                 unitToAttack.takeDamage(unit.rangedWeapon.damage);
@@ -113,7 +122,7 @@ class UnitWrapper extends BoardObject{
         }
     }
 
-    getType(){return "Unit"}
+    getType():string{return "Unit"}
 }
 
 //40K unit
@@ -121,13 +130,13 @@ class UnitWrapper extends BoardObject{
 //optional character property
 class Unit{
     //TODO: rewrite properties for a 40k units
-    movement;
-    toughness;
-    save;
-    wounds;
-    rangedWeapon;
-    meleeWeapon;
-    constructor(movement,toughness,save,wounds,rangedWeapon,meleeWeapon){
+    movement:number;
+    toughness:number;
+    save:number;
+    wounds:number;
+    rangedWeapon:Weapon;
+    meleeWeapon:Weapon;
+    constructor(movement:number,toughness:number,save:number,wounds:number,rangedWeapon:Weapon,meleeWeapon:Weapon){
         this.movement = movement;
         this.save = save;
         this.wounds = wounds;
@@ -136,7 +145,7 @@ class Unit{
         this.toughness = toughness;
     }
 
-    clone(){
+    clone():Unit{
         return structuredClone(this);
         //return new this(this.movement,this.toughness,this.save,this.wounds.this.rangedWeapon,this.meleeWeapon)
     }

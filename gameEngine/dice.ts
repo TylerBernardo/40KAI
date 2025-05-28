@@ -1,6 +1,6 @@
 //each entry in the array represents the sides of that dice. Returns an array of the results for each dice
-function rollNSidedDice(diceArray){
-    var output = Array(diceArray.length);
+function rollNSidedDice(diceArray: number[]): number[]{
+    let output: number[] = Array(diceArray.length);
     for(var n in diceArray){
         output[n] = Math.round(Math.random() * (diceArray[n] - 1) + 1);
     }
@@ -8,7 +8,7 @@ function rollNSidedDice(diceArray){
 }
 
 //roll "count" 6-sided dice
-function multiD6(count){
+function multiD6(count : number): number[]{
     return rollNSidedDice(Array(count).fill(6));
 }
 
@@ -16,15 +16,15 @@ function multiD6(count){
 //a dice class capable of rolling the result of any combination of dice
 class Dice{
     //Example diceString: 2d6+3
-    constantTerm = 0;
-    dice = [];
-    constructor(diceString){
+    constantTerm: number = 0;
+    dice: number[] = [];
+    constructor(diceString: string){
         diceString = diceString.toLowerCase()
         //get each individual term of the expression
-        var terms = diceString.split("+")
+        let terms: string[] = diceString.split("+")
         for(var term of terms){
             //split it between the count of the dice and the sides of the dice
-            var info = term.split('d');
+            let info: string[] = term.split('d');
             if(info.length == 1){
                 //constant term
                 this.constantTerm += parseInt(term,10);
@@ -44,7 +44,7 @@ class Dice{
         //console.log(this.dice);
     }
     //get the total sum of the results
-    roll(){
+    roll():number{
         return this.constantTerm + rollNSidedDice(this.dice).reduce((partialSum,a) => partialSum + a,0);
     }
 }

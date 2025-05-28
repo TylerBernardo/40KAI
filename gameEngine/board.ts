@@ -1,15 +1,18 @@
+import {UnitWrapper} from "./units.ts"
+
 //represents a single tile in the board. holds information about that tile. Each tile represents a 1 inch x 1 inch square on a in person board
 class Tile{
-    x = -1;
-    y = -1;
-    blocksLOS = false;
-    boardObjects = Array();
-    constructor(x,y){
+    x: number = -1;
+    y: number = -1;
+    blocksLOS:boolean = false;
+    boardObjects:BoardObject[] = Array();
+    constructor(x:number,y:number){
         this.x = x;
         this.y = y;
     }
     //remove the BoardObject that has the name "objectName"
-    removeObject(objectName){
+    //returns true if something was removed, returns false if nothing was found
+    removeObject(objectName:string): boolean{
         for(var i = 0; i < this.boardObjects.length;i++){
             if(this.boardObjects[i].name == objectName){
                 this.boardObjects.splice(i,1);
@@ -19,13 +22,15 @@ class Tile{
         return false;
     }
 
-    toString(){
-        var output = "";
+    toString(): string{
+        let output: string = "";
         //console.log(this.boardObjects)
-        for(var object of this.boardObjects){
+        for(let object of this.boardObjects){
             output += object.name;
-            if(object.getType() == "Operative"){
-                output += "(" + object.wounds + ")"
+            if(object instanceof UnitWrapper){
+                let castedUnit: UnitWrapper = object;
+                //TODO: print more useful info here
+                output += "(" + castedUnit.name + ")"
             }
         }
         return output;
@@ -42,26 +47,26 @@ class Tile{
 
 //represents the game board. Keeps track of unit positions, tiles on the board, and other things.
 class Board{
-    height = 0;
-    width = 0;
-    tiles = [];
-    constructor(height,width){
+    height:number = 0;
+    width:number = 0;
+    tiles:Tile[][] = [];
+    constructor(height:number,width:number){
         this.height = height;
         this.width = width;
         this.tiles = Array(height);
         //create array of tiles
-        for(var r = 0; r < height; r++){
+        for(let r = 0; r < height; r++){
             this.tiles[r] = Array(width);
-            for(var c = 0; c < width; c++){
+            for(let c = 0; c < width; c++){
                 this.tiles[r][c] = new Tile(c,r);
             }
         }
     }
 
-    printBoard(){
-        var output = "";
-        for(var r = 0; r < this.height; r++){
-            for(var c = 0; c < this.width; c++){
+    printBoard():string{
+        let output:string = "";
+        for(let r = 0; r < this.height; r++){
+            for(let c = 0; c < this.width; c++){
                 output += "[ " + this.tiles[r][c].toString() + "] "
             }
             output += '\n';
@@ -69,11 +74,11 @@ class Board{
         return output;
     }
 
-    printBoardFormatted(){
-        var output = "<table>";
-        for(var r = 0; r < this.height; r++){
+    printBoardFormatted():string{
+        let output:string = "<table>";
+        for(let r = 0; r < this.height; r++){
             output += "<tr>"
-            for(var c = 0; c < this.width; c++){
+            for(let c = 0; c < this.width; c++){
                 output += "<td>a" + this.tiles[r][c].toString() + "</td>"
             }
             output += '</tr>';
@@ -81,22 +86,22 @@ class Board{
         return output + "</table>";
     }
 
-    getTile(x,y){
+    getTile(x:number,y:number):Tile{
         return this.tiles[y][x]
     }
 
     //https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
-    lineOfSight(startTile,targetTile){
+    lineOfSight(startTile:Tile,targetTile:Tile):boolean{
         //if the points are oriented wrong, swap them.
         if(targetTile.x < startTile.x){
             //console.log(targetTile.x,targetTile.y)
             return this.lineOfSight(targetTile,startTile)
         }
-        var dx = targetTile.x - startTile.x;
-        var dy = targetTile.y - startTile.y;
-        var D = 2 * dy - dx;
-        var y = startTile.y;
-        for(var x = startTile.x; x <= targetTile.x; x += 1){
+        const dx:number = targetTile.x - startTile.x;
+        const dy:number = targetTile.y - startTile.y;
+        let D:number = 2 * dy - dx;
+        let y:number = startTile.y;
+        for(let x = startTile.x; x <= targetTile.x; x += 1){
             if(this.tiles[y][x].blocksLOS){
                 return false;
             }
@@ -109,14 +114,14 @@ class Board{
         return true;
     }
 
-    distance(tile1,tile2){
+    distance(tile1:Tile,tile2:Tile):number{
         return Math.sqrt( (tile1.x-tile2.x)^2 + (tile1.y-tile2.y)^2 )
     }
 
-    getValidMoves(tile,movement){
-        var validMoves = []
-        for(var x = Math.max(0,tile.x - movement); x <Math.min(tile.x + movement,this.width); x++){
-            for(var y = Math.max(0,tile.y - movement); y < Math.min(tile.y + movement,this.height); y++){
+    getValidMoves(tile:Tile,movement:number):[number,number][]{
+        var validMoves:[number,number][] = []
+        for(let x = Math.max(0,tile.x - movement); x <Math.min(tile.x + movement,this.width); x++){
+            for(let y = Math.max(0,tile.y - movement); y < Math.min(tile.y + movement,this.height); y++){
                 if(Math.sqrt(x^2 + y^2) <= movement){
                     validMoves.push([x,y])
                 }
@@ -128,15 +133,15 @@ class Board{
 
 //represents a object on the board
 class BoardObject{
-    name = "";
-    currentTile = null;
-    constructor(tile,name){
+    name: string = "";
+    currentTile: Tile;
+    constructor(tile:Tile,name:string){
         this.name = name;
         this.currentTile = tile;
         tile.boardObjects.push(this);
     }
     //move this object to the given tile
-    move(dTile){
+    move(dTile:Tile): void{
         dTile.boardObjects.push(this);
         if(this.currentTile != null){
             this.currentTile.removeObject(this.name);
@@ -144,32 +149,33 @@ class BoardObject{
         this.currentTile = dTile;
     }
     //remove this object from the board
-    remove(){
+    remove(): void{
         if(this.currentTile != null){
             this.currentTile.removeObject(this.name);
         }
-        delete this;
+        //delete this;
     }
 
-    getType(){return "BoardObject"}
+    getType():string{return "BoardObject"}
 }
 
 //can block line of sight, block movement, or both
 class Terrain extends BoardObject{
-    blocksMovement = false;
-    blocksLOS = false;
-    constructor(tile,name,blocksMovement,blocksLOS){
+    blocksMovement:boolean = false;
+    blocksLOS:boolean = false;
+    constructor(tile:Tile,name:string,blocksMovement:boolean,blocksLOS:boolean){
         super(tile,name);
         this.blocksMovement = blocksMovement;
         this.blocksLOS = blocksLOS;
         tile.blocksLOS = blocksLOS;
     }
 
-    getType(){return "Terrain"}
+    getType():string{return "Terrain"}
 }
 
 export {
     Tile,
     Board,
-    BoardObject
+    BoardObject,
+    Terrain
 }
