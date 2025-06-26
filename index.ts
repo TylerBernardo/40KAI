@@ -44,7 +44,9 @@ var testBoard= new boardUtil.Board(22,30)
 
 var boltRifle: unitUtil.Weapon = new unitUtil.Weapon(3,3,3,4,[],24,1)
 
-var intercessorModel = new unitUtil.Unit(6,4,3,2,[boltRifle],[boltRifle])
+var intercessorModel = new unitUtil.Unit(6,4,3,2,[boltRifle],[boltRifle],"Intercessor")
+
+console.log(JSON.stringify(intercessorModel))
 
 
 var testUnit = new unitUtil.UnitWrapper(testBoard.getTile(5,5),"Test Unit",[intercessorModel.clone()])
@@ -76,7 +78,27 @@ async function demo(socket){
     await delay(1000)
   }
 }
+//sends all information about the model to the client
+async function updateUnitData(unit: unitUtil.UnitWrapper){
+  //convert the unit to a JSON object that can be sent
+  let toSend = {
+    name:unit.name,
+    //position:[unit.currentTile.x,unit.currentTile.y],
+    x:unit.currentTile.x,
+    y:unit.currentTile.y,
+    units:unit.units.map((value:unitUtil.Unit) => JSON.parse(JSON.stringify(value)))
+  }
+  //send the updated object
+  io.emit("updateUnit",toSend);
+}
 
+//sends the client all the data about a player's units
+async function updatePlayerUnitData(player: playerUtil.Warhammer_AI_Player){
+  for(let unit of player.units){
+    await updateUnitData(unit);
+  }
+}
+//update the position of every unit a player owns
 async function updatePositions(player: playerUtil.Warhammer_AI_Player){
   for(let unit of player.units){
     io.emit("setModel",unit.currentTile.x,unit.currentTile.y,unit.name,player.playerNum.toString())
@@ -95,7 +117,9 @@ io.on('connection', (socket) => {
   socket.on("ready", async () => {
     console.log("user is ready")
     io.emit("buildTable",30,22)
+    await updatePlayerUnitData(testPlayer)
     await updatePositions(testPlayer)
+    await updatePlayerUnitData(testPlayer2)
     await updatePositions(testPlayer2)
     
     await demo(socket)

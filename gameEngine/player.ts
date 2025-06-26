@@ -1,6 +1,8 @@
 import {Board,BoardObject,Tile,Terrain} from "./board.ts"
 import * as diceUtils from "./dice.ts"
 import { Unit, UnitWrapper, Weapon } from "./units.ts"
+import {dgpbinom} from "../stats/gpbd.ts"
+import { weaponObjectToGPBD } from "../stats/warhammer.ts"
 
 class WarhammerPlayer{
     playerNum:number = 0;
@@ -56,10 +58,38 @@ class Warhammer_AI_Player extends WarhammerPlayer{
         //for now choose a random probability for this move
         return Math.random();
     }
-
+    
+    //score how good a certain shot is
     evaluateShot(attacker:UnitWrapper,target:UnitWrapper):number{
-        //TODO: Implement attack scoring
-        return Math.random();
+        let score: number = 0
+        let distance: number = this.board.distance(attacker.currentTile,target.currentTile);
+        //get all the weapons combined into bigger profiles
+        let weapons: Weapon[] = attacker.getRangedWeapons(distance);
+        //turn the weapons list into probabilities
+        let weaponStats = weapons.map((value)=>weaponObjectToGPBD(value,target.units[0].save,target.units[0].toughness))
+        let joinedStats = {
+            "prs":weaponStats.reduce((previous,current) => previous.concat(current.prs), [] as number[]),
+            "ps":weaponStats.reduce((previous,current) => previous.concat(current.ps), [] as number[]),
+            "qs":weaponStats.reduce((previous,current) => previous.concat(current.qs), [] as number[])
+        }
+        //calculate the distribution
+        let distribution: number[] = dgpbinom(null,joinedStats.prs,joinedStats.ps,joinedStats.qs)
+        //calculate the average damage and the 95th percentile damage
+        let probLeft: number = 1;
+        let average: number = -1, mostLikely: number = -1;
+        for(let i = 0; i < distribution.length; i++){
+            let p = distribution[i]
+            probLeft -= p;
+            if(mostLikely == -1 && probLeft < .95){
+                mostLikely = i
+            }
+            if(average == -1 && probLeft < .5){
+                average = i
+                break;
+            }
+        }
+        score += average + mostLikely * 3
+        return score;
     }
 
     movement(currentUnit:UnitWrapper):void{

@@ -18,7 +18,9 @@ class Dice{
     //Example diceString: 2d6+3
     constantTerm: number = 0;
     dice: number[] = [];
+    diceString: string;
     constructor(diceString: string){
+        this.diceString = diceString
         diceString = diceString.toLowerCase()
         //get each individual term of the expression
         let terms: string[] = diceString.split("+")
@@ -45,11 +47,29 @@ class Dice{
     }
     //get the total sum of the results
     rollSum():number{
-        return this.constantTerm + rollNSidedDice(this.dice).reduce((partialSum,a) => partialSum + a,0);
+        return rollNSidedDice(this.dice).reduce((partialSum,a) => partialSum + a,this.constantTerm);
     }
 
     roll():number[]{
         return rollNSidedDice(this.dice)
+    }
+
+    max():number{
+        return this.dice.reduce((a,b)=>a+b,this.constantTerm)
+    }
+
+    average():number{
+        return this.dice.reduce((a,b)=> a+Math.round((b+1)/2),this.constantTerm)
+    }
+    //TODO: update diceString with this method
+    add(toAdd: number | Dice){
+        if(typeof toAdd == "number"){
+            this.constantTerm += toAdd
+        }else{
+            this.constantTerm += toAdd.constantTerm
+            this.dice.concat(toAdd.dice)
+        }
+        //update dice string
     }
 }
 

@@ -1,6 +1,7 @@
 import { range } from "express/lib/request.js"
 import {Tile,Board, BoardObject} from "./board.ts"
 import * as diceUtil from "./dice.ts"
+import { simulate } from "../stats/simulate.ts"
 import * as fs from "fs"
 
 export interface WeaponData{
@@ -62,42 +63,34 @@ export class Weapon{
     }
     
     //TODO: implement keywords here. Use simulation work already done elsewhere, maybe move to unit or unit wrapper?
-    attack(toughness:number):number{
-        let results:number[] = typeof this.attacks == "number" ? diceUtil.multiD6(this.attacks) : this.attacks.roll();
-        var hits:number = 0;
-        for(let result of results){
-            if(result >= this.ws){
-                hits++;
-            }
-        }
-        let woundResults:number[] = diceUtil.multiD6(hits);
-        let output:number = 0;
-        //determine what it takes to wound
-        let toWound:number = 5;
-        switch(true){
-            case this.strength * 2 <= toughness:
-                toWound = 6;
-                break;
-            case this.strength < toughness:
-                toWound = 5;
-                break;
-            case this.strength == toughness:
-                toWound = 4;
-                break;
-            case toughness < this.strength:
-                toWound = 3;
-                break;
-            case toughness <= this.strength * 2:
-                toWound = 2;
-                break;
-        }
+    attack(toughness:number,save:number):number[]{
+        let attacks:number = typeof this.attacks == "number" ? this.attacks : this.attacks.rollSum();
+        return simulate(this.ws,attacks,this.strength,this.ap,this.damage,save,toughness,this.keywords)
+    }
 
-        for(let result of woundResults){
-            if(result >= toWound){
-                output++;
+    identical(toCompare: Weapon): boolean{
+        //check if the damage values are the same
+        if(this.damage instanceof diceUtil.Dice && toCompare.damage instanceof diceUtil.Dice){
+            if(this.damage.diceString != toCompare.damage.diceString){
+                return false
             }
+        }else if(typeof this.damage == "number" && typeof toCompare.damage == "number"){
+            if (this.attacks != toCompare.attacks){
+                return false
+            }
+        }else{
+            return false
         }
-        return output;
+        //check other properties that can only be one type
+        return  this.ap == toCompare.ap &&
+                this.keywords == toCompare.keywords &&
+                this.strength == toCompare.strength &&
+                this.ws == toCompare.ws
+
+    }
+
+    clone(): Weapon{
+        return structuredClone(this);
     }
 
 }
@@ -114,6 +107,48 @@ export class UnitWrapper extends BoardObject{
         this.movement = Math.min(...this.units.map((value:Unit) => value.movement))
         //retrive the largest range in the unit
         this.largestRange = Math.max(...this.units.map((value:Unit) => Math.max(...value.rangedWeapons.map((value:Weapon) => value.range))))
+    }
+
+    //create weapons clustered by profile for rolling efficency
+    getRangedWeapons(range:number): Weapon[]{
+        var weapons: Weapon[] = []
+        //iterate over each model
+        for(let model of this.units){
+            //iterate over each model's weapons
+            for(let weapon of model.rangedWeapons){
+                //check if the weapon is within range
+                if(weapon.range > range){
+                    continue
+                }
+                //check if the weapons array already contains something identical
+                let match: boolean = false;
+                for(let weaponC of weapons){
+                    if(weapon.identical(weaponC)){
+                        //add this weapon's attacks to the one in weapons
+                        if(typeof weaponC.attacks == "number"){
+                            if(typeof weapon.attacks == "number"){
+                                weaponC.attacks += weapon.attacks
+                            }else{
+                                weaponC.attacks = new diceUtil.Dice(weaponC.attacks.toString())
+                                weaponC.attacks.add(weapon.attacks)
+                            }
+                            
+                        }else{
+                            weaponC.attacks.add(weapon.attacks)
+                        }
+                        match = true;
+                        break;
+                    }
+                }
+                if(match){
+                    continue
+                }
+                //if there wasnt a match add a copy of this weapon to the weapons list
+                weapons.push(weapon.clone())
+            }
+        }
+
+        return weapons;
     }
 
     //make saving throws based on the incoming attacks
@@ -146,6 +181,8 @@ export class UnitWrapper extends BoardObject{
     }
 
     attackUnitRanged(unitToAttack:UnitWrapper,board:Board):void{
+        //calculate how far away the two units are
+        let distance: number = board.distance(this.currentTile,unitToAttack.currentTile);
         //check if line of sight is ok
         var lineOfSight = board.lineOfSight(this.currentTile,unitToAttack.currentTile);
         if(!lineOfSight){
@@ -155,18 +192,15 @@ export class UnitWrapper extends BoardObject{
         //for now iterate over each unit and attack with each of its weapons. redo later into batches when human dice rolling is involved
         for(var unit of this.units){
             for(let weapon of unit.rangedWeapons){
-                let wounds = weapon.attack(unitToAttack.units[0].toughness);
-
-                let succesfulWounds = unitToAttack.savingThrows(wounds,weapon.ap);
-        
-                for(let i = 0; i < succesfulWounds; i++){
-                    //if the damage is random, roll to see how much damage will be dealt
-                    if(weapon.damage instanceof diceUtil.Dice){
-                        unitToAttack.takeDamage(weapon.damage.rollSum());
-                    }else{
-                        unitToAttack.takeDamage(weapon.damage);
-                    }
-                    
+                //skip the weapon if it is out of range
+                if(weapon.range < distance){
+                    continue
+                }
+                //calculate how much damage this weapon will deal
+                let damageList: number[] = weapon.attack(unitToAttack.units[0].toughness, unitToAttack.units[0].toughness);
+                //apply the damage one wound at a time
+                for(let damage of damageList){
+                    unitToAttack.takeDamage(damage);
                 }
             }
             
@@ -187,13 +221,15 @@ export class Unit{
     wounds:number;
     rangedWeapons:Weapon[];
     meleeWeapons:Weapon[];
-    constructor(movement:number,toughness:number,save:number,wounds:number,rangedWeapons:Weapon[],meleeWeapons:Weapon[]){
+    name:string;
+    constructor(movement:number,toughness:number,save:number,wounds:number,rangedWeapons:Weapon[],meleeWeapons:Weapon[], name:string){
         this.movement = movement;
         this.save = save;
         this.wounds = wounds;
         this.rangedWeapons = rangedWeapons;
         this.meleeWeapons = meleeWeapons;
         this.toughness = toughness;
+        this.name = name;
     }
 
     clone():Unit{
@@ -245,7 +281,7 @@ export function unitsFromFile(filePath:string, board:Board) : UnitWrapper[]{
                 rangedWeapons.push(new Weapon(weaponData.a,weaponData.bs,weaponData.d,weaponData.s,weaponData.keywords,weaponData.range as number,weaponData.ap))
             }
             //create a new Unit object and push it to the array of Unit objects
-            models.push(new Unit(data.m,data.t,data.sv,data.w,rangedWeapons,meleeWeapons))
+            models.push(new Unit(data.m,data.t,data.sv,data.w,rangedWeapons,meleeWeapons,model))
         }
         //create a UnitWrapper and push it to the array of parsed units
         units.push(new UnitWrapper(board.getTile(value.startPos[0],value.startPos[1]),key,models))

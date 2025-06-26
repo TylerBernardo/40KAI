@@ -6,14 +6,41 @@ body{
   
 table{
     border-collapse:collapse;
+    table-layout:fixed;
+}
+
+a, a:hover, a:visited, a:active {
+  color: inherit;
+  text-decoration: none;
+ }
+
+a{
+    width:55px;
+    min-width:55px;
+    max-width: 55px;
+    height:55px;
+    min-height:55px;
+    max-height: 55px;
+    display:table-cell;
+        padding:0px;
+    margin:0px;
+    vertical-align:top;
+    
 }
   
 td{
-    width:50px;
-    height:50px;
-    border: 1px black solid;
+    width:55px;
+    height:55px;
+    padding:0px;
+    margin:0px;
     text-align:center;
     white-space: nowrap;
+    table-layout: fixed;
+}
+
+td:hover{
+    transition: background-color 0.1s;
+    background-color: lightgray;
 }
   
 .player1{
@@ -21,9 +48,10 @@ td{
     height:50px;
     margin:0px;
     padding:0px;
-    background-color: blue;
+    background-color: lightblue;
     border-radius: 50%;
-    display: inline-block;
+    table-layout: fixed;
+    text-align:center;
 }
 
 .player2{
@@ -33,9 +61,23 @@ td{
     padding:0px;
     background-color: red;
     border-radius: 50%;
-    display: inline-block;
+    text-align:center;
+    table-layout: fixed;
 }
 
 p{
     white-space: nowrap;
+    table-layout: fixed;
+}
+
+.info{
+    display:none
+}
+
+td:hover + .info {
+    position:absolute;
+    display:block;
+    z-index:10;
+    background-color:gray;
+    border: 1px black solid;
 }
