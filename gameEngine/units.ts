@@ -1,18 +1,60 @@
+import { range } from "express/lib/request.js"
 import {Tile,Board, BoardObject} from "./board.ts"
 import * as diceUtil from "./dice.ts"
+import * as fs from "fs"
 
-class Weapon{
-    attacks:number = 0;
+export interface WeaponData{
+    a: number | string
+    range: number | undefined
+    bs: number | undefined
+    s:number
+    ap:number
+    d:number | string
+    keywords:string[]
+}
+
+export interface ModelData{
+    m:number
+    t:number
+    sv:number
+    w:number
+    ld:number
+    oc:number
+    inv_sv:number | undefined
+    rangedWeapons: string[]
+    meleeWeapons: string[]
+}
+
+export interface UnitData{
+    models: string[]
+    startPos:[number,number]
+}
+export interface CombatPatrol{
+    weapons: Map<string,WeaponData>
+    models: Map<string,ModelData>
+    units: Map<string,UnitData>
+}
+export class Weapon{
+    attacks:number|diceUtil.Dice = 0;
     ws:number = 7;
-    damage:number = 0;
+    damage:number|diceUtil.Dice = 0;
     strength:number = 0;
     keywords:string[] = [];
     range:number = 0;
     ap:number = 0;
-    constructor(attacks:number,ws:number,damage:number,strength:number,keywords:string[],range:number,ap:number){
-        this.attacks = attacks;
+    constructor(attacks:number|string,ws:number,damage:number|string,strength:number,keywords:string[],range:number,ap:number){
+        //accept either a string containing a valid dice string or just a flat number of attacks
+        if(typeof attacks == "string"){
+            this.attacks = new diceUtil.Dice(attacks);
+        }else{
+             this.attacks = attacks;
+        }
         this.ws = ws;
-        this.damage = damage;
+        if(typeof damage == "string"){
+            this.damage = new diceUtil.Dice(damage);
+        }else{
+             this.damage = damage;
+        }
         this.strength = strength;
         this.keywords = keywords;
         this.range = range;
@@ -21,7 +63,7 @@ class Weapon{
     
     //TODO: implement keywords here. Use simulation work already done elsewhere, maybe move to unit or unit wrapper?
     attack(toughness:number):number{
-        let results:number[] = diceUtil.multiD6(this.attacks);
+        let results:number[] = typeof this.attacks == "number" ? diceUtil.multiD6(this.attacks) : this.attacks.roll();
         var hits:number = 0;
         for(let result of results){
             if(result >= this.ws){
@@ -60,7 +102,7 @@ class Weapon{
 
 }
 
-class UnitWrapper extends BoardObject{
+export class UnitWrapper extends BoardObject{
     units: Unit[] = []
     movement:number;
     largestRange:number;
@@ -71,7 +113,7 @@ class UnitWrapper extends BoardObject{
         //set the movement of the blob to the slowest movement in the unit
         this.movement = Math.min(...this.units.map((value:Unit) => value.movement))
         //retrive the largest range in the unit
-        this.largestRange = Math.min(...this.units.map((value:Unit) => value.rangedWeapon.range))
+        this.largestRange = Math.max(...this.units.map((value:Unit) => Math.max(...value.rangedWeapons.map((value:Weapon) => value.range))))
     }
 
     //make saving throws based on the incoming attacks
@@ -112,13 +154,22 @@ class UnitWrapper extends BoardObject{
         //TODO: redo this sequence for multiple attacking models and weapons of different stats
         //for now iterate over each unit and attack with each of its weapons. redo later into batches when human dice rolling is involved
         for(var unit of this.units){
-            var wounds = unit.rangedWeapon.attack(unitToAttack.units[0].toughness);
+            for(let weapon of unit.rangedWeapons){
+                let wounds = weapon.attack(unitToAttack.units[0].toughness);
 
-            var succesfulWounds = unitToAttack.savingThrows(wounds,unit.rangedWeapon.ap);
-    
-            for(var i = 0; i < succesfulWounds; i++){
-                unitToAttack.takeDamage(unit.rangedWeapon.damage);
+                let succesfulWounds = unitToAttack.savingThrows(wounds,weapon.ap);
+        
+                for(let i = 0; i < succesfulWounds; i++){
+                    //if the damage is random, roll to see how much damage will be dealt
+                    if(weapon.damage instanceof diceUtil.Dice){
+                        unitToAttack.takeDamage(weapon.damage.rollSum());
+                    }else{
+                        unitToAttack.takeDamage(weapon.damage);
+                    }
+                    
+                }
             }
+            
         }
     }
 
@@ -128,20 +179,20 @@ class UnitWrapper extends BoardObject{
 //40K unit
 //keep array of models for wound allocation and weapon tracking
 //optional character property
-class Unit{
+export class Unit{
     //TODO: rewrite properties for a 40k units
     movement:number;
     toughness:number;
     save:number;
     wounds:number;
-    rangedWeapon:Weapon;
-    meleeWeapon:Weapon;
-    constructor(movement:number,toughness:number,save:number,wounds:number,rangedWeapon:Weapon,meleeWeapon:Weapon){
+    rangedWeapons:Weapon[];
+    meleeWeapons:Weapon[];
+    constructor(movement:number,toughness:number,save:number,wounds:number,rangedWeapons:Weapon[],meleeWeapons:Weapon[]){
         this.movement = movement;
         this.save = save;
         this.wounds = wounds;
-        this.rangedWeapon = rangedWeapon;
-        this.meleeWeapon = meleeWeapon;
+        this.rangedWeapons = rangedWeapons;
+        this.meleeWeapons = meleeWeapons;
         this.toughness = toughness;
     }
 
@@ -151,8 +202,54 @@ class Unit{
     }
 }
 
-export {
-    Weapon,
-    UnitWrapper,
-    Unit
+function jsonToCombatPatrol(json: Object): CombatPatrol{
+    return {
+        units: new Map(Object.entries(json["units"])),
+        models: new Map(Object.entries(json["models"])),
+        weapons: new Map(Object.entries(json["weapons"]))
+    }
+}
+
+export function unitsFromFile(filePath:string, board:Board) : UnitWrapper[]{
+    //create an array of units to return
+    let units : UnitWrapper[] = []
+    //read in the JSON file and parse it
+    let file: string = fs.readFileSync(filePath,{ encoding: 'utf8', flag: 'r' });
+    let unitJSONRaw: Object = JSON.parse(file);
+    let unitJSON: CombatPatrol = jsonToCombatPatrol(unitJSONRaw);
+    //iterate over each unit
+    unitJSON.units.forEach((value: UnitData, key:string)=>{
+        let models: Unit[] = []
+        for(let model of value.models){
+            //get the data for that model
+            let data: ModelData = unitJSON.models.get(model) as ModelData
+            //get the data for each weapon
+            let rangedWeapons: Weapon[] = []
+            let meleeWeapons: Weapon[] = []
+            //parse melee weapons
+            for(let weapon of data.meleeWeapons){
+                let weaponData: WeaponData = unitJSON.weapons.get(weapon) as WeaponData
+                if(typeof weaponData.bs == "undefined"){
+                    //handle torrent weapons here
+                    continue
+                }
+                meleeWeapons.push(new Weapon(weaponData.a,weaponData.bs,weaponData.d,weaponData.s,weaponData.keywords,-1,weaponData.ap));
+            }
+            //parse ranged weapons
+            for(let weapon of data.rangedWeapons){
+                let weaponData: WeaponData = unitJSON.weapons.get(weapon) as WeaponData
+                if(typeof weaponData.bs == "undefined"){
+                    //handle torrent weapons here
+                    continue
+                }
+                rangedWeapons.push(new Weapon(weaponData.a,weaponData.bs,weaponData.d,weaponData.s,weaponData.keywords,weaponData.range as number,weaponData.ap))
+            }
+            //create a new Unit object and push it to the array of Unit objects
+            models.push(new Unit(data.m,data.t,data.sv,data.w,rangedWeapons,meleeWeapons))
+        }
+        //create a UnitWrapper and push it to the array of parsed units
+        units.push(new UnitWrapper(board.getTile(value.startPos[0],value.startPos[1]),key,models))
+    })
+
+    return units;
 }

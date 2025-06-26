@@ -44,8 +44,12 @@ class Dice{
         //console.log(this.dice);
     }
     //get the total sum of the results
-    roll():number{
+    rollSum():number{
         return this.constantTerm + rollNSidedDice(this.dice).reduce((partialSum,a) => partialSum + a,0);
+    }
+
+    roll():number[]{
+        return rollNSidedDice(this.dice)
     }
 }
 

@@ -1,0 +1,182 @@
+{
+    "weapons":{
+        "Relic weapon":{
+            "a":6,
+            "bs":2,
+            "s":5,
+            "ap":2,
+            "d":2,
+            "keywords":[]
+        },
+        "Storm bolter 2+":{
+            "a":2,
+            "range":24,
+            "bs":2,
+            "s":4,
+            "ap":0,
+            "d":1,
+            "keywords":["Rapid Fire 2"]
+        },
+        "Force weapon":{
+            "a":4,
+            "bs":3,
+            "s":6,
+            "ap":1,
+            "d":"D3",
+            "keywords":["Psychic"]
+        },
+        "Smite - witchfire":{
+            "a":"D6",
+            "range":24,
+            "bs":3,
+            "s":5,
+            "ap":1,
+            "d":"D3",
+            "keywords":["Psychic"]
+        },
+        "Storm bolter 3+":{
+            "a":2,
+            "range":24,
+            "bs":3,
+            "s":4,
+            "ap":0,
+            "d":1,
+            "keywords":["Rapid Fire 2"]
+        },
+        "Power weapon":{
+            "a":4,
+            "bs":3,
+            "s":5,
+            "ap":2,
+            "d":1,
+            "keywords":[""]
+        },
+        "Assault cannon":{
+            "a":6,
+            "range":24,
+            "bs":3,
+            "s":6,
+            "ap":0,
+            "d":1,
+            "keywords":["Devastating Wounds"]
+        },
+        "Power fist":{
+            "a":3,
+            "bs":3,
+            "s":8,
+            "ap":2,
+            "d":2,
+            "keywords":[]
+        },
+        "Bolt pistol":{
+            "a":1,
+            "range":12,
+            "bs":3,
+            "s":4,
+            "ap":0,
+            "d":1,
+            "keywords":["Pistol"]
+        },
+        "Pyreblaster":{
+            "a":"D6",
+            "range":12,
+            "s":4,
+            "ap":0,
+            "d":1,
+            "keywords":["Ignores Cover","Torrent"]
+        },
+        "Close combat weapon":{
+            "a":3,
+            "bs":3,
+            "s":4,
+            "ap":0,
+            "d":1,
+            "keywords":[]
+        }
+    },
+    "models":{
+        "Captain Octavius":{
+            "m":5,
+            "t":5,
+            "sv":2,
+            "w":6,
+            "ld":6,
+            "oc":1,
+            "inv_sv":4,
+            "rangedWeapons":["Storm bolter 2+"],
+            "meleeWeapons":["Relic weapon"]
+        },
+        "Librarian Tantus":{
+            "m":5,
+            "t":5,
+            "sv":2,
+            "w":5,
+            "ld":6,
+            "oc":1,
+            "inv_sv":4,
+            "rangedWeapons":["Storm bolter 3+","Smite - witchfire"],
+            "meleeWeapons":["Force weapon"]
+        },
+        "Terminator Sergeant":{
+            "m":5,
+            "t":5,
+            "sv":2,
+            "w":3,
+            "ld":6,
+            "oc":1,
+            "inv_sv":4,
+            "rangedWeapons":["Storm bolter 3+"],
+            "meleeWeapons":["Power weapon"]
+        },
+        "Terminator":{
+            "m":5,
+            "t":5,
+            "sv":2,
+            "w":3,
+            "ld":6,
+            "oc":1,
+            "inv_sv":4,
+            "rangedWeapons":["Storm bolter 3+"],
+            "meleeWeapons":["Power fist"]
+        },
+        "Heavy Terminator":{
+            "m":5,
+            "t":5,
+            "sv":2,
+            "w":3,
+            "ld":6,
+            "oc":1,
+            "inv_sv":4,
+            "rangedWeapons":["Assault cannon"],
+            "meleeWeapons":["Power fist"]
+        },
+        "Infernus Marine":{
+            "m":6,
+            "t":4,
+            "sv":3,
+            "w":2,
+            "ld":6,
+            "oc":1,
+            "rangedWeapons":["Bolt pistol", "Pyreblaster"],
+            "meleeWeapons":["Close combat weapon"]
+        }
+    },
+    "units":{
+        "Captain Octavius":{
+            "models":["Captain Octavius"],
+            "startPos":[0,0]
+        },
+        "Librarian Tantus":{
+            "models":["Librarian Tantus"],
+            "startPos":[1,1]
+        },
+        "Terminator Squad":{
+            "models":["Terminator Sergeant","Heavy Terminator","Terminator","Terminator","Terminator"],
+            "startPos":[1,0]
+        },
+        "Infernus Squad":{
+            "models":["Infernus Marine","Infernus Marine","Infernus Marine","Infernus Marine","Infernus Marine"],
+            "startPos":[1,2]
+        }
+    }
+}

@@ -77,8 +77,9 @@ class Warhammer_AI_Player extends WarhammerPlayer{
             }
         }
             */
-        possibleMoves.sort(this.sortCompare)
-        for(let move of possibleMoves){
+        //possibleMoves.sort(this.sortCompare)
+        evalMoves.sort(this.sortCompare)
+        for(let move of evalMoves){
             if(Math.random() <= move[0]){
                 currentUnit.move(this.board.getTile(move[1][0],move[1][1]))
                 return;
@@ -116,7 +117,7 @@ class Warhammer_AI_Player extends WarhammerPlayer{
         }
         //shoot with all units
         for(var unit of this.units){
-            this.decideShooting(unit)
+            //this.decideShooting(unit)
         }
        
     }

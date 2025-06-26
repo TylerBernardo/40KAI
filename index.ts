@@ -44,27 +44,42 @@ var testBoard= new boardUtil.Board(22,30)
 
 var boltRifle: unitUtil.Weapon = new unitUtil.Weapon(3,3,3,4,[],24,1)
 
-var intercessorModel = new unitUtil.Unit(6,4,3,2,boltRifle,boltRifle)
+var intercessorModel = new unitUtil.Unit(6,4,3,2,[boltRifle],[boltRifle])
 
 
-var testUnit = new unitUtil.UnitWrapper(testBoard.getTile(2,2),"Test Unit",[intercessorModel.clone()])
+var testUnit = new unitUtil.UnitWrapper(testBoard.getTile(5,5),"Test Unit",[intercessorModel.clone()])
 //testUnit.move(testBoard.getTile(3,3))
 
-var testUnit2 = new unitUtil.UnitWrapper(testBoard.getTile(2,2),"Test Unit2",[intercessorModel.clone()])
+var testUnit2 = new unitUtil.UnitWrapper(testBoard.getTile(5,6),"Test Unit2",[intercessorModel.clone()])
 var testPlayer = new playerUtil.Warhammer_AI_Player(1,testBoard)
 testPlayer.addUnit(testUnit)
 testPlayer.addUnit(testUnit2)
 
+let spaceMarineCombatPatrol: unitUtil.UnitWrapper[] = unitUtil.unitsFromFile("spaceMarines.json",testBoard)
+let testPlayer2 = new playerUtil.Warhammer_AI_Player(2,testBoard);
+for(let unit of spaceMarineCombatPatrol){
+  testPlayer2.addUnit(unit);
+}
+testPlayer.setOpponent(testPlayer2);
+testPlayer2.setOpponent(testPlayer);
+
 //testUnit2.attackUnitRanged(testUnit)
 
 async function demo(socket){
+  await delay(3000);
   for(var i = 0; i < 10; i++){
-    testPlayer.movement(testUnit)
-    io.emit("setModel",testUnit.currentTile.x,testUnit.currentTile.y,"testUnit","1")
+    testPlayer.turn()
+    await updatePositions(testPlayer)
     await delay(1000)
-    testPlayer.movement(testUnit2)
-    io.emit("setModel",testUnit2.currentTile.x,testUnit2.currentTile.y,"testUnit2","2")
+    testPlayer2.turn()
+    await updatePositions(testPlayer2)
     await delay(1000)
+  }
+}
+
+async function updatePositions(player: playerUtil.Warhammer_AI_Player){
+  for(let unit of player.units){
+    io.emit("setModel",unit.currentTile.x,unit.currentTile.y,unit.name,player.playerNum.toString())
   }
 }
 
@@ -77,12 +92,13 @@ app.get('/', (req, res) => {
 io.on('connection', (socket) => {
   console.log("user connected")
 
-  socket.on("ready", () => {
+  socket.on("ready", async () => {
     console.log("user is ready")
     io.emit("buildTable",30,22)
-    io.emit("setModel",testUnit.currentTile.x,testUnit.currentTile.y,"testUnit","1")
-    io.emit("setModel",testUnit2.currentTile.x,testUnit2.currentTile.y,"testUnit2","2")
-    demo(socket)
+    await updatePositions(testPlayer)
+    await updatePositions(testPlayer2)
+    
+    await demo(socket)
   })
 })
 

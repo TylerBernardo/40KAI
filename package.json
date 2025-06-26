@@ -1,0 +1,25 @@
+{
+  "name": "40kai-1",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "npx tsx index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TylerBernardo/40KAI.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/TylerBernardo/40KAI/issues"
+  },
+  "homepage": "https://github.com/TylerBernardo/40KAI#readme",
+  "description": "",
+  "dependencies": {
+    "express": "^5.1.0",
+    "socket.io": "^4.8.1",
+    "tsx": "^4.20.3"
+  }
+}
