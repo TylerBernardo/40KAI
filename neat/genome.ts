@@ -3,6 +3,7 @@ const DISABLE_RATE = .75
 export interface nodeGene{
     number:number;
     type:"Input" | "Output" | "Hidden" | "Bias";
+    depth: number
 }
 
 export interface connectGene{
@@ -21,6 +22,23 @@ export class Genome{
     constructor(){
         this.nodeGenes = []
         this.connectGenes = []
+    }
+
+    print(){
+        //sort the nodeGenes by depth
+        let sorted: nodeGene[] = this.nodeGenes.toSorted((a,b) => b.depth - a.depth)
+        let toPrint: string = ""
+        let currentDepth = 1
+        for(let gene of sorted){
+            if(gene.depth == currentDepth){
+                toPrint += "(" + gene.number.toString() + ")     "
+            }else{
+                console.log(toPrint)
+                currentDepth = gene.depth
+                toPrint = "(" + gene.number.toString() + ")     "
+            }
+        }
+        console.log(toPrint)
     }
 }
 
