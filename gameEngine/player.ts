@@ -1,6 +1,6 @@
 import {Board,BoardObject,Tile,Terrain} from "./board.ts"
 import * as diceUtils from "./dice.ts"
-import { Unit, UnitWrapper, Weapon } from "./units.ts"
+import { Unit, unitsFromFile, UnitWrapper, Weapon } from "./units.ts"
 import {dgpbinom} from "../stats/gpbd.ts"
 import { weaponObjectToGPBD } from "../stats/warhammer.ts"
 
@@ -36,13 +36,7 @@ class Warhammer_AI_Player extends WarhammerPlayer{
     }
 
     sortCompare(a:[number,any],b:[number,any]):number{
-        if(a[0] < b[0]){
-            return -1
-        }
-        if(a[0] > b[0]){
-            return 1;
-        }
-        return 0;
+        return b[0] - a[0];
     }
 
     evaluateMove(currentUnit:UnitWrapper,moveCords:[number,number]):number{
@@ -65,6 +59,9 @@ class Warhammer_AI_Player extends WarhammerPlayer{
         let distance: number = this.board.distance(attacker.currentTile,target.currentTile);
         //get all the weapons combined into bigger profiles
         let weapons: Weapon[] = attacker.getRangedWeapons(distance);
+        if(weapons.length == 0){
+            return
+        }
         //turn the weapons list into probabilities
         let weaponStats = weapons.map((value)=>weaponObjectToGPBD(value,target.units[0].save,target.units[0].toughness))
         let joinedStats = {
@@ -76,15 +73,12 @@ class Warhammer_AI_Player extends WarhammerPlayer{
         let distribution: number[] = dgpbinom(null,joinedStats.prs,joinedStats.ps,joinedStats.qs)
         //calculate the average damage and the 95th percentile damage
         let probLeft: number = 1;
-        let average: number = -1, mostLikely: number = -1;
+        let average: number = distribution.reduce((sum,value,index) => sum + value * index,0), mostLikely: number = -1;
         for(let i = 0; i < distribution.length; i++){
             let p = distribution[i]
             probLeft -= p;
             if(mostLikely == -1 && probLeft < .95){
                 mostLikely = i
-            }
-            if(average == -1 && probLeft < .5){
-                average = i
                 break;
             }
         }
@@ -123,37 +117,52 @@ class Warhammer_AI_Player extends WarhammerPlayer{
         let possibleTargets:Array<[number,UnitWrapper]> = Array<[number,UnitWrapper]>(0);
         for(let target of this.opponent.units){
             //evaluate all possible targets
-            if(this.board.distance(currentUnit.currentTile,target.currentTile) <= currentUnit.largestRange){
+            if(!target.dead && this.board.distance(currentUnit.currentTile,target.currentTile) <= currentUnit.largestRange){
                 possibleTargets.push([this.evaluateShot(currentUnit,target),target])
             }
         }
+        //console.log("Possible targets for " + currentUnit.name,possibleTargets)
         if(possibleTargets.length == 0){
             return
         }
-        //choose which shot to take
+        //take the shot with the highest ranking
         possibleTargets.sort(this.sortCompare)
-        for(let pTarget of possibleTargets){
-            if(Math.random() <= pTarget[0]){
-                currentUnit.attackUnitRanged(pTarget[1],this.board);
-                return
-            }
-        }
+        currentUnit.attackUnitRanged(possibleTargets[0][1],this.board)
     }
     //we will assume an operative will always fight in melee if it can
     turn(){
         //move all units
         for(var unit of this.units){
+            if(unit.dead){
+                continue
+            }
             this.movement(unit)
         }
         //shoot with all units
         for(var unit of this.units){
-            //this.decideShooting(unit)
+             if(unit.dead){
+                continue
+            }
+            this.decideShooting(unit)
         }
        
     }
 }
 
+function AiPlayerFromFile(fileName: string, board: Board, playerNum: number): Warhammer_AI_Player{
+    //parse the units from the file
+    let unitRoster: UnitWrapper[] = unitsFromFile(fileName,board,playerNum);
+    //create the player
+    let player = new Warhammer_AI_Player(playerNum,board)
+    //add the units
+    for(let unit of unitRoster){
+        player.addUnit(unit)
+    }
+    return player
+}
+
 
 export {
-    Warhammer_AI_Player
+    Warhammer_AI_Player,
+    AiPlayerFromFile
 }

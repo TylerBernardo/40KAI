@@ -70,14 +70,15 @@ class Board{
     }
 
     distance(tile1:Tile,tile2:Tile):number{
-        return Math.sqrt( (tile1.x-tile2.x)^2 + (tile1.y-tile2.y)^2 )
+        return Math.sqrt( (tile1.x-tile2.x)**2 + (tile1.y-tile2.y)**2 )
     }
 
     getValidMoves(tile:Tile,movement:number):[number,number][]{
         var validMoves:[number,number][] = []
         for(let x = Math.max(0,tile.x - movement); x <Math.min(tile.x + movement,this.width-1); x++){
             for(let y = Math.max(0,tile.y - movement); y < Math.min(tile.y + movement,this.height-1); y++){
-                if(Math.sqrt(x^2 + y^2) <= movement){
+                //its only a valid move if it is within movement range and the tile is not occupied by a different unit
+                if(Math.sqrt((x-tile.x)**2 + (y-tile.y)**2) <= movement && (!this.getTile(x,y).hasUnit || (x == tile.x && y == tile.y))){
                     validMoves.push([x,y])
                 }
             }

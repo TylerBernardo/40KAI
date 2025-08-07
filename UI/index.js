@@ -55,8 +55,20 @@ function onloadF(){
 
 function updateUnitInfo(info){
   //add an index property for display functions
-  info.index = info.y * widthG + info.x
-  currentUnits[info.name] = info
+  if(currentUnits[info.name] == undefined){
+    let pos = [info.x,info.y]
+    info.index = info.y * widthG + info.x
+    currentUnits[info.name] = info
+    setModelPosition(pos[0],pos[1],info.name,info.player)
+  }else{
+    let pos = [info.x,info.y]
+    info.x = currentUnits[info.name].x
+    info.y = currentUnits[info.name].y
+    info.index = currentUnits[info.name].index
+    currentUnits[info.name] = info
+    setModelPosition(pos[0],pos[1],info.name,info.player)
+  }
+  
 }
 
 function generateLabel(unitName){

@@ -168,8 +168,8 @@ function dgpb_dc(ops, probs, val_p, val_q){
     var results = new Array(sizeOut)
     var results_rescaled
 
-    // if max_rescaled equals input size, we have an ordinary poisson binomial distribution
-    if(Math.max(...d) == 1){
+    // if max_rescaled equals input size, we have an ordinary poisson binomial distribution TODO: Implement poisson binomial distribution here
+    if(false && Math.max(...d) == 1){
         //compute oridinary distribution
         //results_rescaled = dpb_dc(IntegerVector(),probs_flipped)
     }else{

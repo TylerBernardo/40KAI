@@ -1,5 +1,10 @@
 {
   "compilerOptions": {
-    "target":"es2023"
+    "target":"es2023",
+    "module":"esnext",
+    "moduleResolution": "node",
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "allowSyntheticDefaultImports":true
   }
 }

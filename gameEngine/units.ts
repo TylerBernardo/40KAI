@@ -3,6 +3,7 @@ import {Tile,Board, BoardObject} from "./board.ts"
 import * as diceUtil from "./dice.ts"
 import { simulate } from "../stats/simulate.ts"
 import * as fs from "fs"
+import { error } from "console"
 
 export interface WeaponData{
     a: number | string
@@ -100,6 +101,7 @@ export class UnitWrapper extends BoardObject{
     movement:number;
     largestRange:number;
     character: Unit;
+    dead = false
     constructor(tile:Tile,name:string,units:Unit[]){
         super(tile,name);
         this.units = units;
@@ -117,7 +119,7 @@ export class UnitWrapper extends BoardObject{
             //iterate over each model's weapons
             for(let weapon of model.rangedWeapons){
                 //check if the weapon is within range
-                if(weapon.range > range){
+                if(weapon.range < range){
                     continue
                 }
                 //check if the weapons array already contains something identical
@@ -171,6 +173,8 @@ export class UnitWrapper extends BoardObject{
         if(this.units[0].wounds <= 0){
             if(this.units.length == 1){
                 this.remove();
+                this.dead = true
+                console.log(this.name + " has died!")
                 return;
             }
             //pull the unit from the back of the list to the front
@@ -181,6 +185,7 @@ export class UnitWrapper extends BoardObject{
     }
 
     attackUnitRanged(unitToAttack:UnitWrapper,board:Board):void{
+        console.log(this.name + "("+this.currentTile.x.toString() + "," +this.currentTile.y.toString()  + ") is attacking " + unitToAttack.name + "("+unitToAttack.currentTile.x.toString() + "," +unitToAttack.currentTile.y.toString()  + ")")
         //calculate how far away the two units are
         let distance: number = board.distance(this.currentTile,unitToAttack.currentTile);
         //check if line of sight is ok
@@ -198,6 +203,7 @@ export class UnitWrapper extends BoardObject{
                 }
                 //calculate how much damage this weapon will deal
                 let damageList: number[] = weapon.attack(unitToAttack.units[0].toughness, unitToAttack.units[0].toughness);
+                //console.log("Result: ", damageList)
                 //apply the damage one wound at a time
                 for(let damage of damageList){
                     unitToAttack.takeDamage(damage);
@@ -208,6 +214,21 @@ export class UnitWrapper extends BoardObject{
     }
 
     getType():string{return "Unit"}
+
+    //extend the move method to update the "hasUnit" property
+    move(dTile:Tile): void{
+        if(this.currentTile.x == dTile.x && this.currentTile.y == dTile.y){
+            return
+        }
+        if(dTile.hasUnit){
+            throw new error("Cannot move to a tile that already has a unit")
+        }
+        if(this.currentTile != null){
+            this.currentTile.hasUnit = false
+        }
+        dTile.hasUnit = true
+        super.move(dTile)
+    }
 }
 
 //40K unit
@@ -246,7 +267,7 @@ function jsonToCombatPatrol(json: Object): CombatPatrol{
     }
 }
 
-export function unitsFromFile(filePath:string, board:Board) : UnitWrapper[]{
+export function unitsFromFile(filePath:string, board:Board,playerNum:number) : UnitWrapper[]{
     //create an array of units to return
     let units : UnitWrapper[] = []
     //read in the JSON file and parse it
@@ -284,7 +305,12 @@ export function unitsFromFile(filePath:string, board:Board) : UnitWrapper[]{
             models.push(new Unit(data.m,data.t,data.sv,data.w,rangedWeapons,meleeWeapons,model))
         }
         //create a UnitWrapper and push it to the array of parsed units
-        units.push(new UnitWrapper(board.getTile(value.startPos[0],value.startPos[1]),key,models))
+        if(playerNum == 1){
+            units.push(new UnitWrapper(board.getTile(value.startPos[0],value.startPos[1]),key,models))
+        }else{
+            units.push(new UnitWrapper(board.getTile(value.startPos[0],board.height - value.startPos[1] - 1),key,models))
+        }
+        
     })
 
     return units;

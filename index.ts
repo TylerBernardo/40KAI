@@ -57,7 +57,7 @@ var testPlayer = new playerUtil.Warhammer_AI_Player(1,testBoard)
 testPlayer.addUnit(testUnit)
 testPlayer.addUnit(testUnit2)
 
-let spaceMarineCombatPatrol: unitUtil.UnitWrapper[] = unitUtil.unitsFromFile("spaceMarines.json",testBoard)
+let spaceMarineCombatPatrol: unitUtil.UnitWrapper[] = unitUtil.unitsFromFile("spaceMarines.json",testBoard,2)
 let testPlayer2 = new playerUtil.Warhammer_AI_Player(2,testBoard);
 for(let unit of spaceMarineCombatPatrol){
   testPlayer2.addUnit(unit);
@@ -68,25 +68,36 @@ testPlayer2.setOpponent(testPlayer);
 //testUnit2.attackUnitRanged(testUnit)
 
 async function demo(socket){
-  await delay(3000);
-  for(var i = 0; i < 10; i++){
-    testPlayer.turn()
-    await updatePositions(testPlayer)
-    await delay(1000)
-    testPlayer2.turn()
-    await updatePositions(testPlayer2)
-    await delay(1000)
+  var testBoard= new boardUtil.Board(22,30)
+
+  let player1 = playerUtil.AiPlayerFromFile("spaceMarines.json",testBoard,1)
+  let player2 = playerUtil.AiPlayerFromFile("spaceMarines.json",testBoard,2)
+  player1.setOpponent(player2)
+  player2.setOpponent(player1)
+
+  await updatePlayerUnitData(player1)
+  await updatePlayerUnitData(player2)
+  
+  for(let turn = 1; turn <= 5; turn++){
+    console.log("Turn " + turn.toString())
+    await delay(5000)
+    player1.turn()
+    player2.turn()
+    await updatePlayerUnitData(player1)
+    await updatePlayerUnitData(player2)
   }
+
 }
 //sends all information about the model to the client
-async function updateUnitData(unit: unitUtil.UnitWrapper){
+async function updateUnitData(unit: unitUtil.UnitWrapper, playerNum: number){
   //convert the unit to a JSON object that can be sent
   let toSend = {
-    name:unit.name,
+    name:unit.name + playerNum.toString(),
     //position:[unit.currentTile.x,unit.currentTile.y],
     x:unit.currentTile.x,
     y:unit.currentTile.y,
-    units:unit.units.map((value:unitUtil.Unit) => JSON.parse(JSON.stringify(value)))
+    units:unit.units.map((value:unitUtil.Unit) => JSON.parse(JSON.stringify(value))),
+    player: playerNum
   }
   //send the updated object
   io.emit("updateUnit",toSend);
@@ -95,13 +106,14 @@ async function updateUnitData(unit: unitUtil.UnitWrapper){
 //sends the client all the data about a player's units
 async function updatePlayerUnitData(player: playerUtil.Warhammer_AI_Player){
   for(let unit of player.units){
-    await updateUnitData(unit);
+    await updateUnitData(unit,player.playerNum);
   }
+  //await updatePositions(player)
 }
 //update the position of every unit a player owns
-async function updatePositions(player: playerUtil.Warhammer_AI_Player){
+async function updatePositions(player: playerUtil.Warhammer_AI_Player,){
   for(let unit of player.units){
-    io.emit("setModel",unit.currentTile.x,unit.currentTile.y,unit.name,player.playerNum.toString())
+    io.emit("setModel",unit.currentTile.x,unit.currentTile.y,unit.name + player.playerNum.toString(),player.playerNum.toString())
   }
 }
 
@@ -117,10 +129,6 @@ io.on('connection', (socket) => {
   socket.on("ready", async () => {
     console.log("user is ready")
     io.emit("buildTable",30,22)
-    await updatePlayerUnitData(testPlayer)
-    await updatePositions(testPlayer)
-    await updatePlayerUnitData(testPlayer2)
-    await updatePositions(testPlayer2)
     
     await demo(socket)
   })
