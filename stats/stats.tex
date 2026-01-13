@@ -32,8 +32,17 @@ Substituting in our earlier equation for $P_W$ yields:
 \begin{equation}
     m_s(t) = \sum_{w=0}^\infty m_{\{s|W = w\}}(t) \sum_{h=0}^\infty p(w|H = h)p_H(h)
 \end{equation}
-
-
+While this equation is sufficent to model a majority of situations in game, it cannot handle some of the most important cases. Certain abilities affect the outcomes of future dice rolls, not just their own. In order to model this we must consider that there are different kinds of successes for a single die roll.
+\section{A General Approach}
+Instead of defining a single variable to represent the number of hits, we define two of them. $H$ represents the number of normal hits, while $C_H$ represents the number of "critical hits". It is important to note that these events are mutually exclusive, since a single die cannot be a normal and critical hit at the same time. Together they have joint probability distribution function $P_h(h,c_h)$.\\
+Similarly to section 1, we now define $W$ to represent the number of succesful wounds, but we also define $C_W$ to represent the critical wounds. We define a joint conditional distribution over the two variables, notated $p(w,c_w | H=h, C_H = c_h)$. Now suppose we want to find the joint distribution for $W$ and $C_W$. Then we have that:
+\begin{align*}
+    p_w(w,c_w) &= E[p_W(w,c_w | H=h, C_H = c_h)] \\
+    &= \sum_{h=0}^\infty \sum_{c_h=0}^\infty p_W(w,c_w | H=h, C_H = c_h) p_H(h,c_h)
+\end{align*}
+Hypothesis: The moment generating function of $p_w$ is:
+$$m_w(t) = \sum_{h=0}^\infty \sum_{c_h=0}^\infty p_H(h,c_h) m_{w|H,C_H}(t)$$
+Still need to prove this and verify numerically. Matches the result when $P_H(h,c_h>0) = 0$
 \section{Sustained Hits}
 By drawing a probability tree for the case where we have sustained hits one, we see that the probability distribution of a single hit roll hitting on $h+$ is:
 \begin{equation}p_H(x) = \begin{cases}
