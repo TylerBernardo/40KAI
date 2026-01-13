@@ -164,19 +164,19 @@
     "units":{
         "Captain Octavius":{
             "models":["Captain Octavius"],
-            "startPos":[0,0]
+            "startPos":[15,4]
         },
         "Librarian Tantus":{
             "models":["Librarian Tantus"],
-            "startPos":[1,1]
+            "startPos":[35,4]
         },
         "Terminator Squad":{
             "models":["Terminator Sergeant","Heavy Terminator","Terminator","Terminator","Terminator"],
-            "startPos":[1,0]
+            "startPos":[34,4]
         },
         "Infernus Squad":{
             "models":["Infernus Marine","Infernus Marine","Infernus Marine","Infernus Marine","Infernus Marine"],
-            "startPos":[1,2]
+            "startPos":[7,4]
         }
     }
 }

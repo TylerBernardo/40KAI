@@ -50,6 +50,10 @@ function onloadF(){
     updateUnitInfo(unitInfo)
   })
 
+  socket.on('boardInfo', (boardInfo) => {
+    updateBoardInfo(boardInfo)
+  })
+
   socket.emit("ready")
 }
 
@@ -68,7 +72,16 @@ function updateUnitInfo(info){
     currentUnits[info.name] = info
     setModelPosition(pos[0],pos[1],info.name,info.player)
   }
-  
+}
+
+function updateBoardInfo(info){
+  for(let objective of info.objectives){
+    tableList[objective.y * widthG + objective.x].classList.add("objective")
+  }
+
+  for(let terrain of info.terrain){
+    tableList[terrain.y * widthG + terrain.x].classList.add("terrain")
+  }
 }
 
 function generateLabel(unitName){
@@ -86,6 +99,15 @@ function generateLabel(unitName){
 
 function setModelPosition(x,y,modelName,player){
   console.log(modelName,x,y)
+  if(currentUnits[modelName].dead){
+    //remove the unit from the board when it is dead
+    if(currentUnits[modelName].index != -1){
+      tableList[currentUnits[modelName].index].innerHTML = "<p></p>"
+      panelList[currentUnits[modelName].index].innerHTML = ""
+      currentUnits[modelName].index = -1
+    }
+    return
+  }
     var celltoChange = tableList[y * widthG + x]
     celltoChange.innerHTML = '<p class = "player' +  player + '">'+ modelName + "</p>"
     panelList[y * widthG + x].innerHTML = generateLabel(modelName)
@@ -109,6 +131,8 @@ function setModelPosition(x,y,modelName,player){
 function moveModel(e){
   e.preventDefault()
   var target = e.target
+  target.classList.toggle("terrain")
+  return
   console.log(target)
   var player = parseInt(target.className.split("player")[1])
   console.log(player)
@@ -129,7 +153,10 @@ function moveModel(e){
   }
 }
 
-
+function makeTerrainJSON(){
+  let terrain = tableList.filter((value) => value.classList.contains("terrain")).map((value) => `["x":"${value.id.split(",")[0]}","y":"${value.id.split(",")[1]}","blocksLOS":true,"blocksMovement":false]`).join(',\n')
+  console.log(terrain)
+}
 
 
 

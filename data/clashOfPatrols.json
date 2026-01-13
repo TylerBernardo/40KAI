@@ -1,0 +1,32 @@
+{
+    "name":"Clash of Patrols",
+    "primary":"Take and Hold",
+    "rule":"Retrieve Intelligence",
+    "width":44,
+    "height":30,
+    "deployHeight":5,
+    "objectives":[
+        {
+            "y":14,
+            "x":11
+        },
+        {
+            "y":14,
+            "x":21
+        },
+        {
+            "y":14,
+            "x":31
+        },
+        {
+            "y":21,
+            "x":21
+        },{
+            "y":7,
+            "x":21
+        }
+    ],
+    "terrain":[
+        {"x":33,"y":3,"blocksLOS":true,"blocksMovement":false},{"x":33,"y":4,"blocksLOS":true,"blocksMovement":false},{"x":0,"y":5,"blocksLOS":true,"blocksMovement":false},{"x":12,"y":5,"blocksLOS":true,"blocksMovement":false},{"x":17,"y":5,"blocksLOS":true,"blocksMovement":false},{"x":33,"y":5,"blocksLOS":true,"blocksMovement":false},{"x":0,"y":6,"blocksLOS":true,"blocksMovement":false},{"x":12,"y":6,"blocksLOS":true,"blocksMovement":false},{"x":13,"y":6,"blocksLOS":true,"blocksMovement":false},{"x":14,"y":6,"blocksLOS":true,"blocksMovement":false},{"x":15,"y":6,"blocksLOS":true,"blocksMovement":false},{"x":16,"y":6,"blocksLOS":true,"blocksMovement":false},{"x":17,"y":6,"blocksLOS":true,"blocksMovement":false},{"x":33,"y":6,"blocksLOS":true,"blocksMovement":false},{"x":0,"y":7,"blocksLOS":true,"blocksMovement":false},{"x":1,"y":7,"blocksLOS":true,"blocksMovement":false},{"x":2,"y":7,"blocksLOS":true,"blocksMovement":false},{"x":3,"y":7,"blocksLOS":true,"blocksMovement":false},{"x":4,"y":7,"blocksLOS":true,"blocksMovement":false},{"x":5,"y":7,"blocksLOS":true,"blocksMovement":false},{"x":6,"y":7,"blocksLOS":true,"blocksMovement":false},{"x":7,"y":7,"blocksLOS":true,"blocksMovement":false},{"x":8,"y":7,"blocksLOS":true,"blocksMovement":false},{"x":33,"y":7,"blocksLOS":true,"blocksMovement":false},{"x":34,"y":7,"blocksLOS":true,"blocksMovement":false},{"x":35,"y":7,"blocksLOS":true,"blocksMovement":false},{"x":36,"y":7,"blocksLOS":true,"blocksMovement":false},{"x":37,"y":7,"blocksLOS":true,"blocksMovement":false},{"x":38,"y":7,"blocksLOS":true,"blocksMovement":false},{"x":39,"y":7,"blocksLOS":true,"blocksMovement":false},{"x":40,"y":7,"blocksLOS":true,"blocksMovement":false},{"x":41,"y":7,"blocksLOS":true,"blocksMovement":false},{"x":42,"y":7,"blocksLOS":true,"blocksMovement":false},{"x":43,"y":7,"blocksLOS":true,"blocksMovement":false},{"x":24,"y":8,"blocksLOS":true,"blocksMovement":false},{"x":23,"y":9,"blocksLOS":true,"blocksMovement":false},{"x":25,"y":9,"blocksLOS":true,"blocksMovement":false},{"x":22,"y":10,"blocksLOS":true,"blocksMovement":false},{"x":26,"y":10,"blocksLOS":true,"blocksMovement":false},{"x":27,"y":11,"blocksLOS":true,"blocksMovement":false},{"x":28,"y":12,"blocksLOS":true,"blocksMovement":false},{"x":15,"y":13,"blocksLOS":true,"blocksMovement":false},{"x":29,"y":13,"blocksLOS":true,"blocksMovement":false},{"x":14,"y":14,"blocksLOS":true,"blocksMovement":false},{"x":28,"y":14,"blocksLOS":true,"blocksMovement":false},{"x":13,"y":15,"blocksLOS":true,"blocksMovement":false},{"x":27,"y":15,"blocksLOS":true,"blocksMovement":false},{"x":14,"y":16,"blocksLOS":true,"blocksMovement":false},{"x":15,"y":17,"blocksLOS":true,"blocksMovement":false},{"x":16,"y":18,"blocksLOS":true,"blocksMovement":false},{"x":20,"y":18,"blocksLOS":true,"blocksMovement":false},{"x":17,"y":19,"blocksLOS":true,"blocksMovement":false},{"x":19,"y":19,"blocksLOS":true,"blocksMovement":false},{"x":18,"y":20,"blocksLOS":true,"blocksMovement":false},{"x":0,"y":22,"blocksLOS":true,"blocksMovement":false},{"x":1,"y":22,"blocksLOS":true,"blocksMovement":false},{"x":2,"y":22,"blocksLOS":true,"blocksMovement":false},{"x":3,"y":22,"blocksLOS":true,"blocksMovement":false},{"x":4,"y":22,"blocksLOS":true,"blocksMovement":false},{"x":5,"y":22,"blocksLOS":true,"blocksMovement":false},{"x":6,"y":22,"blocksLOS":true,"blocksMovement":false},{"x":7,"y":22,"blocksLOS":true,"blocksMovement":false},{"x":8,"y":22,"blocksLOS":true,"blocksMovement":false},{"x":9,"y":22,"blocksLOS":true,"blocksMovement":false},{"x":34,"y":22,"blocksLOS":true,"blocksMovement":false},{"x":35,"y":22,"blocksLOS":true,"blocksMovement":false},{"x":36,"y":22,"blocksLOS":true,"blocksMovement":false},{"x":37,"y":22,"blocksLOS":true,"blocksMovement":false},{"x":38,"y":22,"blocksLOS":true,"blocksMovement":false},{"x":39,"y":22,"blocksLOS":true,"blocksMovement":false},{"x":40,"y":22,"blocksLOS":true,"blocksMovement":false},{"x":41,"y":22,"blocksLOS":true,"blocksMovement":false},{"x":42,"y":22,"blocksLOS":true,"blocksMovement":false},{"x":9,"y":23,"blocksLOS":true,"blocksMovement":false},{"x":25,"y":23,"blocksLOS":true,"blocksMovement":false},{"x":26,"y":23,"blocksLOS":true,"blocksMovement":false},{"x":27,"y":23,"blocksLOS":true,"blocksMovement":false},{"x":28,"y":23,"blocksLOS":true,"blocksMovement":false},{"x":29,"y":23,"blocksLOS":true,"blocksMovement":false},{"x":30,"y":23,"blocksLOS":true,"blocksMovement":false},{"x":42,"y":23,"blocksLOS":true,"blocksMovement":false},{"x":9,"y":24,"blocksLOS":true,"blocksMovement":false},{"x":25,"y":24,"blocksLOS":true,"blocksMovement":false},{"x":30,"y":24,"blocksLOS":true,"blocksMovement":false},{"x":42,"y":24,"blocksLOS":true,"blocksMovement":false},{"x":9,"y":25,"blocksLOS":true,"blocksMovement":false},{"x":9,"y":26,"blocksLOS":true,"blocksMovement":false}
+    ]
+}

@@ -4,7 +4,10 @@ class Tile{
     y: number = -1;
     blocksLOS:boolean = false;
     hasUnit = false;
+    unitTeam: 1 | 2 | undefined = undefined
     boardObjects:BoardObject[] = Array();
+    isObjective: boolean = false;
+    control: 1 | 2 | undefined = undefined
     constructor(x:number,y:number){
         this.x = x;
         this.y = y;

@@ -5,6 +5,6 @@
     "moduleResolution": "node",
     "noEmit": true,
     "allowImportingTsExtensions": true,
-    "allowSyntheticDefaultImports":true
+    "allowSyntheticDefaultImports":true,
   }
 }

@@ -3,13 +3,16 @@ import * as diceUtils from "./dice.ts"
 import { Unit, unitsFromFile, UnitWrapper, Weapon } from "./units.ts"
 import {dgpbinom} from "../stats/gpbd.ts"
 import { weaponObjectToGPBD } from "../stats/warhammer.ts"
-
+import {Genome} from "neat-javascript"
+//Generic interface for a warhammer player that must be implemented TODO: Revisit what is included in this class
 class WarhammerPlayer{
-    playerNum:number = 0;
+    playerNum: 1 | 2 = 1;
     board:Board;
     units:UnitWrapper[] = []
     opponent:WarhammerPlayer;
-    constructor(_playerNum:number,board:Board){
+    io: undefined | any = undefined
+    score: number = 0
+    constructor(_playerNum:1 | 2,board:Board){
         this.playerNum = _playerNum;
         this.board = board;
     }
@@ -20,43 +23,42 @@ class WarhammerPlayer{
 
     addUnit(toAdd:UnitWrapper):void{
         this.units.push(toAdd);
+        //update the tile the unit is placed on
     }
 
 
     //each class that implements WarhammerPlayer should implement these functions
-    movement(currentUnit:UnitWrapper){}
+    movement(currentUnit:UnitWrapper, bitmap: Array<0|1>){}
     decideShooting(currentUnit:UnitWrapper){}
     turn(){}
     //TODO: Add charging
 }
 
 class Warhammer_AI_Player extends WarhammerPlayer{
-    constructor(playerNum:number,board:Board){
+    genome: Genome;
+    constructor(playerNum:1|2,board:Board,genome: Genome){
         super(playerNum,board)
+        this.genome = genome;
     }
 
     sortCompare(a:[number,any],b:[number,any]):number{
         return b[0] - a[0];
     }
 
-    evaluateMove(currentUnit:UnitWrapper,moveCords:[number,number]):number{
-        let currentDistanceToEnemies:number = 0;
-        let newDistanceToEnemies:number = 0;
-        for(let enemy of this.opponent.units){
-            currentDistanceToEnemies += this.board.distance(enemy.currentTile,currentUnit.currentTile)
-            newDistanceToEnemies += this.board.distance(enemy.currentTile,this.board.getTile(moveCords[0],moveCords[1]))
-        }
-        //TODO: Use neural network here
+    evaluateMove(currentUnit:UnitWrapper,moveCords:[number,number],boardmap: Array<number>):number{
+        let inputs: Array<number> = boardmap
+        inputs = inputs.concat([currentUnit.currentTile.x,currentUnit.currentTile.y,moveCords[0],moveCords[1]])
+        return this.genome.propagate(inputs)
         //TODO: Check if move puts you in engagement range of an enemy operative
         //let inputs = [currentDistanceToEnemies,newDistanceToEnemies,this.board.distance(currentUnit.currentTile,this.board.getTile(moveCords[0],moveCords[1])),currentUnit.save,currentUnit.defense,currentUnit.wounds,currentUnit.rangedWeapon.range]
         //for now choose a random probability for this move
-        return Math.random();
+        //return Math.random();
     }
     
     //score how good a certain shot is
     evaluateShot(attacker:UnitWrapper,target:UnitWrapper):number{
         let score: number = 0
-        let distance: number = this.board.distance(attacker.currentTile,target.currentTile);
+        let distance: number = Board.distance(attacker.currentTile,target.currentTile);
         //get all the weapons combined into bigger profiles
         let weapons: Weapon[] = attacker.getRangedWeapons(distance);
         if(weapons.length == 0){
@@ -86,12 +88,12 @@ class Warhammer_AI_Player extends WarhammerPlayer{
         return score;
     }
 
-    movement(currentUnit:UnitWrapper):void{
+    movement(currentUnit:UnitWrapper, boardmap: Array<number>):void{
         let possibleMoves = this.board.getValidMoves(currentUnit.currentTile,currentUnit.movement);
         //select move at random currently. This will eventually be done with the ai
         let evalMoves:Array<[number,[number,number]]> = Array<[number,[number,number]]>(possibleMoves.length);
         for(var i = 0; i < possibleMoves.length; i++){
-            evalMoves[i] = [this.evaluateMove(currentUnit,possibleMoves[i]),possibleMoves[i]]
+            evalMoves[i] = [this.evaluateMove(currentUnit,possibleMoves[i],boardmap),possibleMoves[i]]
         }
         //account for charges
         /*
@@ -117,7 +119,7 @@ class Warhammer_AI_Player extends WarhammerPlayer{
         let possibleTargets:Array<[number,UnitWrapper]> = Array<[number,UnitWrapper]>(0);
         for(let target of this.opponent.units){
             //evaluate all possible targets
-            if(!target.dead && this.board.distance(currentUnit.currentTile,target.currentTile) <= currentUnit.largestRange){
+            if(!target.dead && Board.distance(currentUnit.currentTile,target.currentTile) <= currentUnit.largestRange){
                 possibleTargets.push([this.evaluateShot(currentUnit,target),target])
             }
         }
@@ -129,15 +131,77 @@ class Warhammer_AI_Player extends WarhammerPlayer{
         possibleTargets.sort(this.sortCompare)
         currentUnit.attackUnitRanged(possibleTargets[0][1],this.board)
     }
+
+    generateBitmap():Array<0|1>{
+        let bitmap: Array<0|1> = new Array(this.board.width * this.board.height * 4)
+        for(let i = 0; i < this.board.width * this.board.height; i++){
+            let currentTile: Tile = this.board.getTileByIndex(i)
+            bitmap[i*4] = currentTile.unitTeam == 1 ? 1 : 0
+            bitmap[i*4+1] = currentTile.unitTeam == 2 ? 1 : 0
+            bitmap[i*4+2] = currentTile.isObjective ? 1 : 0
+            bitmap[i*4+3] = currentTile.blocksLOS ? 1 : 0
+        }
+        return bitmap
+    }
+
+    generateBitmap3D():Array<Array<0|1>>{
+        let bitmap: Array<Array<0|1>> = new Array(this.board.width * this.board.height)
+        for(let i = 0; i < this.board.width * this.board.height; i++){
+            let currentTile: Tile = this.board.getTileByIndex(i)
+            let vec = new Array(4)
+            vec[0] = currentTile.unitTeam == 1 ? 1 : 0
+            vec[1] = currentTile.unitTeam == 2 ? 1 : 0
+            vec[2] = currentTile.isObjective ? 1 : 0
+            vec[3] = currentTile.blocksLOS ? 1 : 0
+            bitmap[i] = vec
+        }
+        return bitmap
+    }
+
+    generateBoardmap():Array<number>{
+        let boardmap = new Array(this.board.width * this.board.height)
+        for(let i = 0; i < this.board.width * this.board.height; i++){
+            let currentTile: Tile = this.board.getTileByIndex(i)
+            boardmap[i] = (currentTile.unitTeam == 1 ? 1 : 0) + (currentTile.unitTeam == 2 ? 2 : 0) + (currentTile.isObjective ? 4 : 0) + (currentTile.blocksLOS ? 8 : 0)
+        }
+        return boardmap
+    }
+
+    points(): number{
+        //check every tile 3 inches away from each objective
+        let objectives: Array<Tile> = this.board.tiles.flat().filter((value)=>value.isObjective)
+        let ocArray: Array<number> = new Array(objectives.length).fill(0)
+        //each unit within 3 inches of an objective add oc to it
+        for(let unit of this.units){
+            let distances: Array<number> = new Array(objectives.length).fill(0).map((_value, index) => Board.distance(unit.currentTile,objectives[index]))
+            ocArray = ocArray.map((value, index) => distances[index] <= 3 ? value + unit.getOC() : value)
+        }
+
+        for(let unit of this.opponent.units){
+            let distances: Array<number> = new Array(objectives.length).map((_value, index) => Board.distance(unit.currentTile,objectives[index]))
+            ocArray = ocArray.map((value, index) => distances[index] <= 3 ? value - unit.getOC() : value)
+        }
+        let points = Math.min(ocArray.reduce((ac,value) => value > 0 ? ac + 5 : ac, 0),15)
+        this.score += points
+        //the player cant score more than 15 points in one turn from this mission
+        return points
+    }
+
     //we will assume an operative will always fight in melee if it can
     turn(){
+        this.points()
+        //console.log('Player ' + this.playerNum + " has scored " + this.points() + " points!")
+        //generate the bitmap of the board for movement
+        //let bitmap: Array<0|1> = this.generateBitmap()
+        let boardmap: Array<number> = this.generateBoardmap()
         //move all units
         for(var unit of this.units){
             if(unit.dead){
                 continue
             }
-            this.movement(unit)
+            this.movement(unit,boardmap)
         }
+        
         //shoot with all units
         for(var unit of this.units){
              if(unit.dead){
@@ -149,11 +213,11 @@ class Warhammer_AI_Player extends WarhammerPlayer{
     }
 }
 
-function AiPlayerFromFile(fileName: string, board: Board, playerNum: number): Warhammer_AI_Player{
+function AiPlayerFromFile(fileName: string, board: Board, playerNum: 1|2, genome: Genome): Warhammer_AI_Player{
     //parse the units from the file
-    let unitRoster: UnitWrapper[] = unitsFromFile(fileName,board,playerNum);
+    let unitRoster: UnitWrapper[] = unitsFromFile(fileName,board,playerNum,playerNum);
     //create the player
-    let player = new Warhammer_AI_Player(playerNum,board)
+    let player = new Warhammer_AI_Player(playerNum,board, genome)
     //add the units
     for(let unit of unitRoster){
         player.addUnit(unit)

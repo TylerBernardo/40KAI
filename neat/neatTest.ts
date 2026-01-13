@@ -1,9 +1,8 @@
 import * as neat from "neat-javascript"
-
 // Create a new instance of Config
 const config = new neat.Config({
   // Basic network structure
-  inputSize: 2,                    // Number of input nodes
+  inputSize: 1000,                    // Number of input nodes
   outputSize: 1,                   // Number of output nodes
   
   // Activation function (string-based selection)
@@ -58,7 +57,8 @@ const config = new neat.Config({
 });
 //console.log(config)
 
-//let population = new neat.Population(config)
+let population = new neat.Population(config)
 
-let algorithm = new neat.Algorithm(config);
-algorithm.run(); // Starts the evolution process
+let testGenome = population.genomes[0]
+
+console.log(testGenome.propagate(new Array(999).fill(0)))
