@@ -1,0 +1,46 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{amsthm}
+
+\title{Warhammer Stats Modelling}
+\author{Tyler Bernardo}
+\date{}
+\begin{document}
+\maketitle
+\section{Introduction}
+Let $H$ be defined as the discrete random variable representing the number of hits from a single dice roll, and call it's probability distribution function $p_H(h)$.
+
+Now consider the distribution $p(w | H = h)$, which is the conditional distribution for the wound rolls based on how many hits you got. Then if we want to calculate the distribution for the number of sucessful wounds, we simply compute the following expectation:
+$$p_W(w) = E[p(W | H=h)] = \sum_{h=0}^{\infty} p(w|H = h)p_H(h)$$
+Computing the Moment Generating Function of this distribution, we have that:
+\begin{align*}
+    m_w(t) = E[e^{tW}] &= \sum_{w = 0}^{\infty} e^{tw} p_W(w) \\
+    &= \sum_{w=0}^\infty e^{tw} \sum_{h = 0}^\infty p(w|H = h)p_H(h) \\
+    &= \sum_{h = 0}^\infty \sum_{w=0}^\infty  e^{tw} p(w|H = h)p_H(h) \\
+    &= \sum_{h = 0}^\infty p_H(h) \sum_{w=0}^\infty  e^{tw} p(w|H = h) \\
+    m_w(t) &= \sum_{h=0}^\infty p_H(h) m_{\{w|H = h\}}(t)
+\end{align*}  
+Finally, if we consider a third random variable $S$ representing the amount of damage dealt by the attack, we define its conditional distribution $p(S | W = w)$ and repeat the same process as above.
+\begin{align*}
+    m_s(t) = E[e^{tS}] &= \sum_{s=0}^\infty e^{ts} p_S(s)\\
+    &= \sum_{s=0}^\infty e^{ts} \sum_{w = 0}^\infty p(s|W = w)p_W(w) \\
+    &= \sum_{w = 0}^\infty \sum_{s=0}^\infty  e^{ts} p(s|W = w)p_W(w) \\
+    &= \sum_{w = 0}^\infty p_W(w) \sum_{s=0}^\infty  e^{ts} p(s|W = w) \\
+    &= \sum_{w=0}^\infty p_W(w) m_{\{s|W = w\}}(t)
+\end{align*}
+Substituting in our earlier equation for $P_W$ yields:
+\begin{equation}
+    m_s(t) = \sum_{w=0}^\infty m_{\{s|W = w\}}(t) \sum_{h=0}^\infty p(w|H = h)p_H(h)
+\end{equation}
+
+
+\section{Sustained Hits}
+By drawing a probability tree for the case where we have sustained hits one, we see that the probability distribution of a single hit roll hitting on $h+$ is:
+\begin{equation}p_H(x) = \begin{cases}
+    \frac{11}{36} & x = 2\\
+    \frac{30-5h}{36} & x=1\\
+    \frac{5h - 5}{36} & x = 0
+\end{cases}
+\end{equation}
+
+\end{document}
