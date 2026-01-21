@@ -10,27 +10,19 @@
 \section{Introduction}
 Let $H$ be defined as the discrete random variable representing the number of hits from a single dice roll, and call it's probability distribution function $p_H(h)$.
 
-Now consider the distribution $p(w | H = h)$, which is the conditional distribution for the wound rolls based on how many hits you got. Then if we want to calculate the distribution for the number of sucessful wounds, we simply compute the following expectation:
+Now consider the distribution $p(w | H = h)$, which is the conditional distribution for the wound rolls based on the number of hits. Then if we want to calculate the distribution for the number of sucessful wounds, we simply compute the following expectation:
 $$p_W(w) = E[p(W | H=h)] = \sum_{h=0}^{\infty} p(w|H = h)p_H(h)$$
-Computing the Moment Generating Function of this distribution, we have that:
+Finally, if we consider a third random variable $D$ representing the amount of damage dealt by the attack, we define its conditional distribution $p(S | W = w)$ and compute it's moment generating function.
 \begin{align*}
-    m_w(t) = E[e^{tW}] &= \sum_{w = 0}^{\infty} e^{tw} p_W(w) \\
-    &= \sum_{w=0}^\infty e^{tw} \sum_{h = 0}^\infty p(w|H = h)p_H(h) \\
-    &= \sum_{h = 0}^\infty \sum_{w=0}^\infty  e^{tw} p(w|H = h)p_H(h) \\
-    &= \sum_{h = 0}^\infty p_H(h) \sum_{w=0}^\infty  e^{tw} p(w|H = h) \\
-    m_w(t) &= \sum_{h=0}^\infty p_H(h) m_{\{w|H = h\}}(t)
-\end{align*}  
-Finally, if we consider a third random variable $S$ representing the amount of damage dealt by the attack, we define its conditional distribution $p(S | W = w)$ and repeat the same process as above.
-\begin{align*}
-    m_s(t) = E[e^{tS}] &= \sum_{s=0}^\infty e^{ts} p_S(s)\\
-    &= \sum_{s=0}^\infty e^{ts} \sum_{w = 0}^\infty p(s|W = w)p_W(w) \\
-    &= \sum_{w = 0}^\infty \sum_{s=0}^\infty  e^{ts} p(s|W = w)p_W(w) \\
-    &= \sum_{w = 0}^\infty p_W(w) \sum_{s=0}^\infty  e^{ts} p(s|W = w) \\
+    m_D(t) = E[e^{tD}] &= \sum_{d=0}^\infty e^{td} p_D(d)\\
+    &= \sum_{d=0}^\infty e^{td} \sum_{w = 0}^\infty p(d|W = w)p_W(w) \\
+    &= \sum_{w = 0}^\infty \sum_{d=0}^\infty  e^{td} p(s|W = w)p_W(w) \\
+    &= \sum_{w = 0}^\infty p_W(w) \sum_{s=0}^\infty  e^{td} p(s|W = w) \\
     &= \sum_{w=0}^\infty p_W(w) m_{\{s|W = w\}}(t)
 \end{align*}
 Substituting in our earlier equation for $P_W$ yields:
 \begin{equation}
-    m_s(t) = \sum_{w=0}^\infty m_{\{s|W = w\}}(t) \sum_{h=0}^\infty p(w|H = h)p_H(h)
+    m_D(t) = \sum_{w=0}^\infty m_{\{d|W = w\}}(t) \sum_{h=0}^\infty p(w|H = h)p_H(h)
 \end{equation}
 While this equation is sufficent to model a majority of situations in game, it cannot handle some of the most important cases. Certain abilities affect the outcomes of future dice rolls, not just their own. In order to model this we must consider that there are different kinds of successes for a single die roll.
 \section{A General Approach}
@@ -40,9 +32,54 @@ Similarly to section 1, we now define $W$ to represent the number of succesful w
     p_w(w,c_w) &= E[p_W(w,c_w | H=h, C_H = c_h)] \\
     &= \sum_{h=0}^\infty \sum_{c_h=0}^\infty p_W(w,c_w | H=h, C_H = c_h) p_H(h,c_h)
 \end{align*}
-Hypothesis: The moment generating function of $p_w$ is:
-$$m_w(t) = \sum_{h=0}^\infty \sum_{c_h=0}^\infty p_H(h,c_h) m_{w|H,C_H}(t)$$
-Still need to prove this and verify numerically. Matches the result when $P_H(h,c_h>0) = 0$
+
+Finally, we define $D$ as the random variable representing the number of instances of damage that made it through. We define its conditional distribution $p(D | W = w, C_w = c_w)$. If we want to find the distribution of $D$, we simply take the expectation of it's conditional distribution function:
+\begin{align*}
+    p_d(d) &= E[p(D | W = w, C_w = w)]\\
+    &= \sum_{w=0}^\infty \sum_{c_w = 0}^\infty p(D | W = w, C_w = c_w) p_w(w,c_w)\\
+    &= \sum_{w=0}^\infty \sum_{c_w = 0}^\infty p(D | W = w, C_w = c_w) \sum_{h=0}^\infty \sum_{c_h=0}^\infty p_W(w,c_w | H=h, C_H = c_h) p_H(h,c_h)
+\end{align*}
+So therefore, the general form of the damage a single die can deal is:
+\begin{equation}
+    p_d(d) = \sum_{w=0}^\infty \sum_{c_w = 0}^\infty p(D | W = w, C_w = c_w) \sum_{h=0}^\infty \sum_{c_h=0}^\infty p_W(w,c_w | H=h, C_H = c_h) p_H(h,c_h)
+\end{equation}
+\section{Simplifying Assumptions}
+In its current form (2) is very unwieldly, and will prove hard to utilize. Before calculating it's moment generating function, we will reduce it down based on assumptions specific to the game of warhammer. In this case we will assume:
+\begin{itemize}
+    \item $C_h$ can only take on values of $0$ and $1$
+    \item $W,C_w$ can only take on integer values on the interval $[0,H + C_h]$ since the hit roll is the only step that can add dice to the sequence. Furthermore $W + C_w \le H + C_h$.
+    \item $D$ can only take on integer values on the interval $[0,W+C_w]$
+    \item $D|W,C_w = c_1 + \mbox{Bin}(p_s,W+C_w - c_2)$ for some constants $c_1,c_2$ and some probability constant $p_s$
+\end{itemize}
+It is worth noting that in practice $H$ will always be bounded to some relatively small discrete interval, however that interval is entirely dependent on $P_H$, so we cannot make any single assumption about it's support. \\
+Applying these assumptions to (2) yields:
+\begin{equation}
+        p_d(d) = \sum_{w=0}^{H+C_h} \sum_{c_w = 0}^{H+C_h-w} p(D | W = w, C_w = c_w) \sum_{h=0}^\infty \sum_{c_h=0}^1 p_W(w,c_w | H=h, C_H = c_h) p_H(h,c_h)
+\end{equation}
+For a decent number of situatons, $H + C_h \le 1$, and $D \in [0,1]$. In this case $D \sim \hbox{Ber}(p_d(1))$. Because of this, the case of $n$ dice rolls follows $D \sim \mbox{Bin}(p_d(1),n)$.\\ \\
+However there exists one specific keyword that necesitates the complexity of (3): the "sustained hits n" keyword. This ability adds dice to the sequence in the middle of a trial, meaning that for a single die $D \in [0,1 + n]$. For $n=1$ this coresponds to a trinomial distribution, but $n$ can also take on higher values, or even random ones. In these cases there is no general way to construct the distribution function for the sum of multiple dice. To aid in the computation of these more complex distributions, we want to consider the moment generating function of $D$. We have that:
+\begin{align*}
+    m_D(t) &= E[e^{tD}] \\
+    &= \sum_{d = 0}^\infty e^{td} p_d(d)\\
+    &= \sum_{d = 0}^\infty e^{td} \sum_{w=0}^{H+C_h} \sum_{c_w = 0}^{H+C_h-w} p(D | W = w, C_w = c_w) \sum_{h=0}^\infty \sum_{c_h=0}^1 p_W(w,c_w | H=h, C_H = c_h) p_H(h,c_h) \\
+    &=  \sum_{w=0}^{H+C_h} \sum_{c_w = 0}^{H+C_h-w} \sum_{h=0}^\infty \sum_{c_h=0}^1 p_W(w,c_w | H=h, C_H = c_h) p_H(h,c_h) \sum_{d = 0}^\infty e^{td} p(D | W = w, C_w = c_w) \\
+    m_D(t) &=  \sum_{w=0}^{H+C_h} \sum_{c_w = 0}^{H+C_h-w} \sum_{h=0}^\infty \sum_{c_h=0}^1 p_W(w,c_w | H=h, C_H = c_h) p_H(h,c_h) m_{d|w,c_w}(t| W = w, C_w = c_w)
+\end{align*}
+Where $m_{d | W = w, C_w = c_w}(t)$ is the moment generating function of the conditional distribution for $D$.\\ \\
+Let $S$ represent the total number of damage, and let's its value be given by:
+$$S = \sum_{i=1}^N D_i$$ 
+Where $D_1, D_2, ..., D_N$ are i.i.d distributed with distribution function $p_d(d)$. Taking the moment generating function we have that:
+\begin{align*}
+    m_S(t) &= E[e^{St}] \\
+    &= E[e^{(\sum_{i=1}^N D_i)t}]\\
+    &= E[\Pi_{i=1}^N e^{D_i t}]\\
+    &= \Pi_{i=1}^N E(e^{D_i t})\\
+    m_S(t) &= (m_D(t))^N
+\end{align*}
+Though it does not have a nice closed form, in practice we can compute the distribution function for $S$ via fourier inversion, like so:
+\begin{equation*}
+p(s) = \frac{1}{2\pi} \int_0^{2\pi} m_S(it) e^{-ist}dt
+\end{equation*}
 \section{Sustained Hits}
 By drawing a probability tree for the case where we have sustained hits one, we see that the probability distribution of a single hit roll hitting on $h+$ is:
 \begin{equation}p_H(x) = \begin{cases}
