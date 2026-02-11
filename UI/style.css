@@ -81,3 +81,11 @@ td:hover + .info {
     background-color:gray;
     border: 1px black solid;
 }
+
+.objective{
+    background-color: orange;
+}
+
+.terrain{
+    background-color:gray;
+}

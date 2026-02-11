@@ -3,6 +3,7 @@ import {Tile,Board, BoardObject} from "./board.ts"
 import * as diceUtil from "./dice.ts"
 import { simulate } from "../stats/simulate.ts"
 import * as fs from "fs"
+import { error } from "console"
 
 export interface WeaponData{
     a: number | string
@@ -100,13 +101,19 @@ export class UnitWrapper extends BoardObject{
     movement:number;
     largestRange:number;
     character: Unit;
-    constructor(tile:Tile,name:string,units:Unit[]){
+    dead = false
+    team: 1|2|undefined = undefined;
+    constructor(tile:Tile,name:string,units:Unit[], team:1|2){
         super(tile,name);
         this.units = units;
         //set the movement of the blob to the slowest movement in the unit
         this.movement = Math.min(...this.units.map((value:Unit) => value.movement))
         //retrive the largest range in the unit
         this.largestRange = Math.max(...this.units.map((value:Unit) => Math.max(...value.rangedWeapons.map((value:Weapon) => value.range))))
+        this.team = team
+        //update the tile with info about the unit
+        tile.hasUnit = true
+        tile.unitTeam = team
     }
 
     //create weapons clustered by profile for rolling efficency
@@ -117,7 +124,7 @@ export class UnitWrapper extends BoardObject{
             //iterate over each model's weapons
             for(let weapon of model.rangedWeapons){
                 //check if the weapon is within range
-                if(weapon.range > range){
+                if(weapon.range < range){
                     continue
                 }
                 //check if the weapons array already contains something identical
@@ -171,6 +178,8 @@ export class UnitWrapper extends BoardObject{
         if(this.units[0].wounds <= 0){
             if(this.units.length == 1){
                 this.remove();
+                this.dead = true
+                //console.log(this.name + " has died!")
                 return;
             }
             //pull the unit from the back of the list to the front
@@ -181,13 +190,15 @@ export class UnitWrapper extends BoardObject{
     }
 
     attackUnitRanged(unitToAttack:UnitWrapper,board:Board):void{
+        
         //calculate how far away the two units are
-        let distance: number = board.distance(this.currentTile,unitToAttack.currentTile);
+        let distance: number = Board.distance(this.currentTile,unitToAttack.currentTile);
         //check if line of sight is ok
         var lineOfSight = board.lineOfSight(this.currentTile,unitToAttack.currentTile);
         if(!lineOfSight){
             return;
         }
+        //console.log(this.name + "("+this.currentTile.x.toString() + "," +this.currentTile.y.toString()  + ") is attacking " + unitToAttack.name + "("+unitToAttack.currentTile.x.toString() + "," +unitToAttack.currentTile.y.toString()  + ")")
         //TODO: redo this sequence for multiple attacking models and weapons of different stats
         //for now iterate over each unit and attack with each of its weapons. redo later into batches when human dice rolling is involved
         for(var unit of this.units){
@@ -198,6 +209,7 @@ export class UnitWrapper extends BoardObject{
                 }
                 //calculate how much damage this weapon will deal
                 let damageList: number[] = weapon.attack(unitToAttack.units[0].toughness, unitToAttack.units[0].toughness);
+                //console.log("Result: ", damageList)
                 //apply the damage one wound at a time
                 for(let damage of damageList){
                     unitToAttack.takeDamage(damage);
@@ -208,6 +220,27 @@ export class UnitWrapper extends BoardObject{
     }
 
     getType():string{return "Unit"}
+
+    //extend the move method to update the "hasUnit" property
+    move(dTile:Tile): void{
+        if(this.currentTile.x == dTile.x && this.currentTile.y == dTile.y){
+            return
+        }
+        if(dTile.hasUnit){
+            throw new error("Cannot move to a tile that already has a unit")
+        }
+        if(this.currentTile != null){
+            this.currentTile.unitTeam = undefined
+            this.currentTile.hasUnit = false
+        }
+        dTile.hasUnit = true
+        dTile.unitTeam = this.team
+        super.move(dTile)
+    }
+
+    getOC(): number{
+        return this.units.reduce((ac, current) => ac + current.oc,0)
+    }
 }
 
 //40K unit
@@ -222,7 +255,8 @@ export class Unit{
     rangedWeapons:Weapon[];
     meleeWeapons:Weapon[];
     name:string;
-    constructor(movement:number,toughness:number,save:number,wounds:number,rangedWeapons:Weapon[],meleeWeapons:Weapon[], name:string){
+    oc:number;
+    constructor(movement:number,toughness:number,save:number,wounds:number,rangedWeapons:Weapon[],meleeWeapons:Weapon[], name:string,oc:number){
         this.movement = movement;
         this.save = save;
         this.wounds = wounds;
@@ -230,6 +264,7 @@ export class Unit{
         this.meleeWeapons = meleeWeapons;
         this.toughness = toughness;
         this.name = name;
+        this.oc = oc
     }
 
     clone():Unit{
@@ -246,7 +281,7 @@ function jsonToCombatPatrol(json: Object): CombatPatrol{
     }
 }
 
-export function unitsFromFile(filePath:string, board:Board) : UnitWrapper[]{
+export function unitsFromFile(filePath:string, board:Board,playerNum:number,team:1|2) : UnitWrapper[]{
     //create an array of units to return
     let units : UnitWrapper[] = []
     //read in the JSON file and parse it
@@ -281,10 +316,15 @@ export function unitsFromFile(filePath:string, board:Board) : UnitWrapper[]{
                 rangedWeapons.push(new Weapon(weaponData.a,weaponData.bs,weaponData.d,weaponData.s,weaponData.keywords,weaponData.range as number,weaponData.ap))
             }
             //create a new Unit object and push it to the array of Unit objects
-            models.push(new Unit(data.m,data.t,data.sv,data.w,rangedWeapons,meleeWeapons,model))
+            models.push(new Unit(data.m,data.t,data.sv,data.w,rangedWeapons,meleeWeapons,model,data.oc))
         }
         //create a UnitWrapper and push it to the array of parsed units
-        units.push(new UnitWrapper(board.getTile(value.startPos[0],value.startPos[1]),key,models))
+        if(playerNum == 1){
+            units.push(new UnitWrapper(board.getTile(value.startPos[0],value.startPos[1]),key,models,team))
+        }else{
+            units.push(new UnitWrapper(board.getTile(board.width - value.startPos[0] - 1,board.height - value.startPos[1] - 1),key,models,team))
+        }
+        
     })
 
     return units;

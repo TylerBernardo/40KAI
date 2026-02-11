@@ -3,7 +3,11 @@ class Tile{
     x: number = -1;
     y: number = -1;
     blocksLOS:boolean = false;
+    hasUnit = false;
+    unitTeam: 1 | 2 | undefined = undefined
     boardObjects:BoardObject[] = Array();
+    isObjective: boolean = false;
+    control: 1 | 2 | undefined = undefined
     constructor(x:number,y:number){
         this.x = x;
         this.y = y;
@@ -19,13 +23,6 @@ class Tile{
         }
         return false;
     }
-    
-        /*
-        //target tile should always be greater than the 
-        if(targetTile.x < this.x || targetTile.y < this.y){
-            return targetTile.lineOfSight(this);
-        }
-            */
 
 };
 

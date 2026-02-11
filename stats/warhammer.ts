@@ -27,7 +27,7 @@ function getCombatChance(numDice:number,diceSides:number,toHit:number,toWound:nu
     if(keywords.includes("Reroll all non 6's")){
         modifier = modifier * (11/6.0) + (1/(6*hitChance)) - 1
     }
-    console.log(modifier)
+    //console.log(modifier)
     if(keywords.includes("Sustained Hits 1")){
         modifier = modifier/2;
         //iterations = iterations*4
