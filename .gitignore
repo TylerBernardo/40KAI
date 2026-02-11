@@ -1,0 +1,7 @@
+node_modules
+stats/stats.synctex.gz
+stats/stats.log
+stats/stats.fls
+stats/stats.fdb_latexmk
+stats/stats.aux
+stats/stats.pdf

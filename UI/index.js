@@ -1,8 +1,9 @@
 var socket;
 var body;
 var tableList = []
+var panelList = []
 var widthG,heightG;
-var currentModels = {}
+var currentUnits = {}
 
 var selected = false;
 var selectedModel;
@@ -24,11 +25,16 @@ function onloadF(){
         link.href = "#"
         link.addEventListener("click",moveModel)
         var cell = document.createElement("td")
-        cell.innerHTML = c + "," + r
+        cell.innerHTML = "<p></p>"//c + "," + r
         cell.id = c + "," + r
         //cell.addEventListener("click",moveModel)
         tableList.push(cell)
         link.appendChild(cell)
+        //create info panel
+        let panelDiv = document.createElement("div")
+        panelDiv.className = "info"
+        panelList.push(panelDiv)
+        link.appendChild(panelDiv)
         tr.appendChild(link)
       }
       table.appendChild(tr)
@@ -40,24 +46,84 @@ function onloadF(){
     setModelPosition(x,y,modelName,player)
   })
 
+  socket.on('updateUnit', (unitInfo) => {
+    updateUnitInfo(unitInfo)
+  })
+
+  socket.on('boardInfo', (boardInfo) => {
+    updateBoardInfo(boardInfo)
+  })
+
   socket.emit("ready")
+}
+
+function updateUnitInfo(info){
+  //add an index property for display functions
+  if(currentUnits[info.name] == undefined){
+    let pos = [info.x,info.y]
+    info.index = info.y * widthG + info.x
+    currentUnits[info.name] = info
+    setModelPosition(pos[0],pos[1],info.name,info.player)
+  }else{
+    let pos = [info.x,info.y]
+    info.x = currentUnits[info.name].x
+    info.y = currentUnits[info.name].y
+    info.index = currentUnits[info.name].index
+    currentUnits[info.name] = info
+    setModelPosition(pos[0],pos[1],info.name,info.player)
+  }
+}
+
+function updateBoardInfo(info){
+  for(let objective of info.objectives){
+    tableList[objective.y * widthG + objective.x].classList.add("objective")
+  }
+
+  for(let terrain of info.terrain){
+    tableList[terrain.y * widthG + terrain.x].classList.add("terrain")
+  }
+}
+
+function generateLabel(unitName){
+  let unit = currentUnits[unitName]
+  if(unit == undefined){
+    throw new error("Unit does not exist!")
+  }
+  let output = "<h4>" + unitName + "</h4>"
+  //iterate over each model in the unit
+  for(let model of unit.units){
+    output += "<ul>" + model.name + ": " + model.wounds + " Wounds Remaining</ul>"
+  }
+  return output
 }
 
 function setModelPosition(x,y,modelName,player){
   console.log(modelName,x,y)
+  if(currentUnits[modelName].dead){
+    //remove the unit from the board when it is dead
+    if(currentUnits[modelName].index != -1){
+      tableList[currentUnits[modelName].index].innerHTML = "<p></p>"
+      panelList[currentUnits[modelName].index].innerHTML = ""
+      currentUnits[modelName].index = -1
+    }
+    return
+  }
     var celltoChange = tableList[y * widthG + x]
     celltoChange.innerHTML = '<p class = "player' +  player + '">'+ modelName + "</p>"
+    panelList[y * widthG + x].innerHTML = generateLabel(modelName)
   //celltoChange.innerHTML = '<a href = "#" class = "player' +  player + '" onclick="moveModel(event)">'+ modelName + "</a>"
-    if(currentModels[modelName] == undefined){
-      currentModels[modelName] = y * widthG + x
+    if(currentUnits[modelName] == undefined){
+      throw new error("Unit does not exist on the board")
+      //currentUnits[modelName] = y * widthG + x
     }else{
-      var _y = Math.floor(currentModels[modelName] / widthG)
-      var _x = Math.round(((currentModels[modelName] / widthG) - _y) * widthG)
-      if(x == _x && y == _y){
+      if(x == currentUnits[modelName].x && y == currentUnits[modelName].y){
         
       }else{
-        tableList[currentModels[modelName]].innerHTML = _x + "," + _y
-        currentModels[modelName] = y * widthG + x
+        tableList[currentUnits[modelName].index].innerHTML = "<p></p>"//_x + "," + _y
+        panelList[currentUnits[modelName].index].innerHTML = ""
+        currentUnits[modelName].index = y * widthG + x
+        currentUnits[modelName].x = x
+        currentUnits[modelName].y = y
       }
     }
   }
@@ -65,6 +131,8 @@ function setModelPosition(x,y,modelName,player){
 function moveModel(e){
   e.preventDefault()
   var target = e.target
+  target.classList.toggle("terrain")
+  return
   console.log(target)
   var player = parseInt(target.className.split("player")[1])
   console.log(player)
@@ -85,7 +153,10 @@ function moveModel(e){
   }
 }
 
-
+function makeTerrainJSON(){
+  let terrain = tableList.filter((value) => value.classList.contains("terrain")).map((value) => `["x":"${value.id.split(",")[0]}","y":"${value.id.split(",")[1]}","blocksLOS":true,"blocksMovement":false]`).join(',\n')
+  console.log(terrain)
+}
 
 
 
